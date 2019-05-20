@@ -1,6 +1,6 @@
 <?php
 
-namespace OndraKoupil\AppTools\LazyCorsMiddleware;
+namespace OndraKoupil\AppTools;
 
 use Slim\Http\Request;
 use Slim\Http\Response;
