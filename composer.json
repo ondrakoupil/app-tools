@@ -1,0 +1,23 @@
+{
+    "name": "ondrakoupil/app-tools",
+    "description": "A bunch of tools and utilities for my projects",
+    "type": "library",
+    "require": {
+        "ondrakoupil/tools": "^1"
+    },
+    "require-dev": {
+        "nette/tester": "^2.2"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Ondřej Koupil",
+            "email": "ondra@ondrakoupil.cz"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "OndraKoupil\\AppTools\\": "src/"
+        }
+    }
+}
