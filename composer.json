@@ -7,7 +7,8 @@
     },
     "suggest": {
         "slim/slim": "Required for LazyCorsMiddleware",
-        "psr/log": "Required for Logger"
+        "psr/log": "Required for Logger",
+        "nette/neon": "Required for AppSettings"
     },
     "require-dev": {
         "nette/tester": "^2.2"
