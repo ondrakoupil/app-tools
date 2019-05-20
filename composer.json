@@ -5,6 +5,10 @@
     "require": {
         "ondrakoupil/tools": "^1"
     },
+    "suggest": {
+        "slim/slim": "Required for LazyCorsMiddleware",
+        "psr/log": "Required for Logger"
+    },
     "require-dev": {
         "nette/tester": "^2.2"
     },
