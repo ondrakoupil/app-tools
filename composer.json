@@ -6,7 +6,7 @@
         "ondrakoupil/tools": "^1"
     },
     "suggest": {
-        "slim/slim": "Required for LazyCorsMiddleware",
+        "slim/slim": "Required for middlewares",
         "psr/log": "Required for Logger",
         "nette/neon": "Required for AppSettings"
     },
