@@ -8,6 +8,13 @@ use Slim\Container;
 
 class PDO {
 
+	/*
+	 * Usage:
+	 *
+	 * PDO::addFactory($container, $container[AppSettings::class]->db);
+	 *
+	 */
+
 	static function addFactory(Container $container, DbConnectionSettings $dbSettings) {
 
 		$container[BasePDO::class] = function(Container $container) use ($dbSettings) {
