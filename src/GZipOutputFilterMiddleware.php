@@ -8,9 +8,22 @@ use Slim\Http\Stream;
 
 class GZipOutputFilterMiddleware {
 
+	/**
+	 * @var bool
+	 */
+	private $enable;
+
+	function __construct($enable = true) {
+		$this->enable = $enable;
+	}
+
 	// https://discourse.slimframework.com/t/compressing-text-gzip/2328
 
 	function __invoke(Request $request, Response $response, callable $next) {
+
+		if (!$this->enable) {
+			return $next($request, $response);
+		}
 
 		if ($request->hasHeader('Accept-Encoding') &&
 			stristr($request->getHeaderLine('Accept-Encoding'), 'gzip') === false
