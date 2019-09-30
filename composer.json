@@ -3,7 +3,8 @@
     "description": "A bunch of tools and utilities for my projects",
     "type": "library",
     "require": {
-        "ondrakoupil/tools": "^1"
+        "ondrakoupil/tools": "^1",
+        "ext-json": "*"
     },
     "suggest": {
         "slim/slim": "Required for middlewares",
