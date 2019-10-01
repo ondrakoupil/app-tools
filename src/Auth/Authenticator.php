@@ -10,12 +10,12 @@ interface Authenticator {
 
 	public function validateToken(string $token): ValidationResult;
 
-	public function createToken(Identity $identity): string;
+	public function createToken(Identity $identity, DateTime $now = null): string;
 
 	public function extendToken(string $token, DateInterval $interval, DateTime $now = null);
 
 	public function invalidateToken(string $token);
 
-	public function validateCredentials(string $username, string $password): Identity;
+	public function validateCredentials(string $username, string $password): ?Identity;
 
 }

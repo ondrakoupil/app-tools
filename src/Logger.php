@@ -1,6 +1,6 @@
 <?php
 
-namespace Zelen;
+namespace OndraKoupil\AppTools;
 
 use DateTime;
 use Exception;

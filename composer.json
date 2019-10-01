@@ -4,7 +4,8 @@
     "type": "library",
     "require": {
         "ondrakoupil/tools": "^1",
-        "ext-json": "*"
+        "ext-json": "*",
+        "php": ">=7.1"
     },
     "suggest": {
         "slim/slim": "Required for middlewares",

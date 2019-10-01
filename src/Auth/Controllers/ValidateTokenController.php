@@ -27,22 +27,15 @@ class ValidateTokenController {
 
 	/**
 	 * @param Authenticator $authenticator
-	 * @param DateInterval|string $tokenValidity
+	 * @param DateInterval $tokenValidity
 	 * @param string $tokenParamName
 	 *
 	 * @throws Exception Invalid token validity value
 	 */
-	public function __construct(Authenticator $authenticator, $tokenValidity = null, $tokenParamName = 'token') {
+	public function __construct(Authenticator $authenticator, DateInterval $tokenValidity, $tokenParamName = 'token') {
 		$this->authenticator = $authenticator;
 		$this->tokenParamName = $tokenParamName;
 		$this->tokenValidity = $tokenValidity;
-
-		if ($this->tokenValidity and is_string($this->tokenValidity)) {
-			$this->tokenValidity = new DateInterval($this->tokenValidity);
-		}
-		if (!$this->tokenValidity or !($this->tokenValidity instanceof DateInterval)) {
-			throw new Exception('Invalid token validity interval given.');
-		}
 	}
 
 	function __invoke(Request $request, Response $response, $args) {
@@ -51,10 +44,14 @@ class ValidateTokenController {
 
 	function run(Request $request, Response $response, $args) {
 		
-		$token = $request->getParsedBodyParam($this->tokenParamName);
+		$token = $request->getParam($this->tokenParamName);
 
 		if (!$token) {
-			return $response->withStatus(400);
+			$token = $request->getAttribute($this->tokenParamName);
+		}
+
+		if (!$token) {
+			throw new Exception('Missing token.', 400);
 		}
 
 		$result = $this->authenticator->validateToken($token);

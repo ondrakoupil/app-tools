@@ -2,6 +2,9 @@
 
 namespace OndraKoupil\AppTools\Auth\Controllers;
 
+use DateInterval;
+use DateTime;
+use Exception;
 use OndraKoupil\AppTools\Auth\Authenticator;
 use Slim\Http\Request;
 use Slim\Http\Response;
@@ -24,14 +27,21 @@ class LoginController {
 	protected $passwordParamName;
 
 	/**
+	 * @var DateInterval
+	 */
+	private $tokenValidity;
+
+	/**
 	 * @param Authenticator $authenticator
+	 * @param DateInterval $tokenValidity
 	 * @param string $usernameParamName
 	 * @param string $passwordParamName
 	 */
-	public function __construct(Authenticator $authenticator, $usernameParamName = 'username', $passwordParamName = 'password') {
+	public function __construct(Authenticator $authenticator, DateInterval $tokenValidity, $usernameParamName = 'username', $passwordParamName = 'password') {
 		$this->authenticator = $authenticator;
 		$this->usernameParamName = $usernameParamName;
 		$this->passwordParamName = $passwordParamName;
+		$this->tokenValidity = $tokenValidity;
 	}
 
 	function __invoke(Request $request, Response $response, $args) {
@@ -40,21 +50,26 @@ class LoginController {
 
 	function run(Request $request, Response $response, $args) {
 
-		$username = $request->getParsedBodyParam($this->usernameParamName);
-		$password = $request->getParsedBodyParam($this->passwordParamName);
+		$username = $request->getParam($this->usernameParamName);
+		$password = $request->getParam($this->passwordParamName);
 
 		if (!$username or !$password) {
-			return $response->withStatus(400);
+			throw new Exception('Missing username or password.', 400);
 		}
 
 		$identity = $this->authenticator->validateCredentials($username, $password);
 		if (!$identity) {
-			return $response->withStatus(401);
+			return $response->withJson(array('success' => false), 401);
 		}
 
-		$token = $this->authenticator->createToken($identity);
+		$token = $this->authenticator->createToken($identity, new DateTime('now'));
+
+		if ($token) {
+			$this->authenticator->extendToken($token, $this->tokenValidity, new DateTime('now'));
+		}
+
 		return $response->withJson(
-			array('token' => $token, 'id' => $identity->getId(), 'identity' => $identity->toArray())
+			array('success' => true, 'token' => $token, 'id' => $identity->getId(), 'identity' => $identity->toArray())
 		);
 
 	}

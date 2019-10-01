@@ -28,7 +28,10 @@ class PDO {
 		$pdo = new BasePDO(
 			'mysql:host=' . $dbSettings->host . ';dbname=' . $dbSettings->dbName . ';charset=' . $dbSettings->charset,
 			$dbSettings->user,
-			$dbSettings->password
+			$dbSettings->password,
+			array(
+				BasePDO::ATTR_ERRMODE => BasePDO::ERRMODE_EXCEPTION,
+			)
 		);
 
 		return $pdo;

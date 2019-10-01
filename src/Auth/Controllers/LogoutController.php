@@ -2,6 +2,7 @@
 
 namespace OndraKoupil\AppTools\Auth\Controllers;
 
+use Exception;
 use OndraKoupil\AppTools\Auth\Authenticator;
 use Slim\Http\Request;
 use Slim\Http\Response;
@@ -34,14 +35,18 @@ class LogoutController {
 
 	function run(Request $request, Response $response, $args) {
 
-		$token = $request->getParsedBodyParam($this->tokenParamName);
+		$token = $request->getParam($this->tokenParamName);
 
 		if (!$token) {
-			return $response->withStatus(400);
+			$token = $request->getAttribute($this->tokenParamName);
+		}
+
+		if (!$token) {
+			throw new Exception('Missing token.', 400);
 		}
 
 		$this->authenticator->invalidateToken($token);
-		return $response->withStatus(200);
+		return $response;
 
 	}
 
