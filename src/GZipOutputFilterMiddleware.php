@@ -39,6 +39,11 @@ class GZipOutputFilterMiddleware {
 			return $next($request, $response);
 		}
 
+		if ($response->getBody()->getSize() < 100) {
+			// Too small to be effectively encoded
+			return $next($request, $response);
+		}
+
 		// Compress response data
 		$deflateContext = deflate_init(ZLIB_ENCODING_GZIP);
 		$compressed = deflate_add($deflateContext, (string)$response->getBody(), \ZLIB_FINISH);
