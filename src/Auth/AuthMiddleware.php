@@ -2,6 +2,7 @@
 
 namespace OndraKoupil\AppTools\Auth;
 
+use DateInterval;
 use Slim\Http\Request;
 use Slim\Http\Response;
 
@@ -27,9 +28,15 @@ class AuthMiddleware {
 	 */
 	private $userAttrName;
 
+	/**
+	 * @var DateInterval
+	 */
+	private $tokenValidity;
+
 	function __construct(
 		Authenticator $authenticator,
 		bool $authenticatedOnly = true,
+		DateInterval $tokenValidity = null,
 		string $tokenAttrName = 'token',
 		string $userAttrName = 'user'
 	) {
@@ -37,6 +44,11 @@ class AuthMiddleware {
 		$this->authenticatedOnly = $authenticatedOnly;
 		$this->tokenName = $tokenAttrName;
 		$this->userAttrName = $userAttrName;
+		$this->tokenValidity = $tokenValidity;
+
+		if (!$this->tokenValidity) {
+			$this->tokenValidity = new DateInterval('PT1H');
+		}
 	}
 
 	function __invoke(Request $request, Response $response, $next) {
@@ -55,6 +67,9 @@ class AuthMiddleware {
 		$result = $this->authenticator->validateToken($token);
 
 		if ($result->success) {
+
+			$this->authenticator->extendToken($token, $this->tokenValidity);
+
 			$request = $request->withAttribute($this->userAttrName, $result->identity);
 			return $next($request, $response);
 
