@@ -7,6 +7,14 @@ use Slim\Http\Response;
 
 class LazyCorsMiddleware {
 
+	protected $allowedMethods = array();
+
+	function __construct($allowedMethods = null) {
+		if (!$allowedMethods) {
+			$allowedMethods = array('GET', 'POST');
+		}
+		$this->allowedMethods = $allowedMethods;
+	}
 
 	function __invoke(Request $request, Response $response, callable $next) {
 
@@ -26,7 +34,7 @@ class LazyCorsMiddleware {
 				$response
 					->withHeader('Access-Control-Allow-Origin', $allowOrigin)
 					->withHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Origin, Authorization')
-					->withHeader('Access-Control-Allow-Methods', 'GET, POST');
+					->withHeader('Access-Control-Allow-Methods', implode(', ', $this->allowedMethods));
 
 			return $newResponse;
 		}
@@ -38,7 +46,7 @@ class LazyCorsMiddleware {
 			$nextResponse
 				->withHeader('Access-Control-Allow-Origin', $allowOrigin)
 				->withHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Origin, Authorization')
-				->withHeader('Access-Control-Allow-Methods', 'GET, POST');
+				->withHeader('Access-Control-Allow-Methods', implode(', ', $this->allowedMethods));
 
 		return $newNextResponse;
 

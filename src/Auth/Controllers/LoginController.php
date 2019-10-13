@@ -59,7 +59,7 @@ class LoginController {
 
 		$identity = $this->authenticator->validateCredentials($username, $password);
 		if (!$identity) {
-			return $response->withJson(array('success' => false), 401);
+			return $response->withJson(array('success' => false, 'token' => '', 'id' => null, 'identity' => null));
 		}
 
 		$token = $this->authenticator->createToken($identity, new DateTime('now'));
