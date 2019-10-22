@@ -28,13 +28,14 @@ class LazyCorsMiddleware {
 		if (preg_match('~localhost~i', $originHeader)) {
 			$allowOrigin = $originHeader;
 		}
-
+		
 		if ($request->getMethod() === 'OPTIONS') {
 			$newResponse =
 				$response
+					->withStatus(204)
 					->withHeader('Access-Control-Allow-Origin', $allowOrigin)
 					->withHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Origin, Authorization')
-					->withHeader('Access-Control-Allow-Methods', implode(', ', $this->allowedMethods));
+					->withHeader('Access-Control-Allow-Methods', implode(',', $this->allowedMethods));
 
 			return $newResponse;
 		}
@@ -46,7 +47,7 @@ class LazyCorsMiddleware {
 			$nextResponse
 				->withHeader('Access-Control-Allow-Origin', $allowOrigin)
 				->withHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Origin, Authorization')
-				->withHeader('Access-Control-Allow-Methods', implode(', ', $this->allowedMethods));
+				->withHeader('Access-Control-Allow-Methods', implode(',', $this->allowedMethods));
 
 		return $newNextResponse;
 

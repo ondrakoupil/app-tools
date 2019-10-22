@@ -76,33 +76,36 @@ class ErrorHandler {
 			$payload = array(
 				'error' => $message,
 			);
-
-			if ($this->logger) {
-				$loggableMessage = $exception->getMessage();
-				$maxCount = 10;
-				$count = 0;
-				if ($exception->getCode()) {
-					$loggableMessage .= "\nCode " . $exception->getCode();
-				}
-				if ($exception->getFile()) {
-					$loggableMessage .= "\nin " . $exception->getFile() . ' at line ' . $exception->getLine();
-				}
-				$stack = $exception->getTrace();
-				foreach ($stack as $stackRow) {
-					if ($count >= $maxCount) {
-						break;
-					}
-					$count++;
-
-					$loggableMessage .= "\n";
-					$loggableMessage .= "#" . $count . ' ' . $stackRow['function'] . '() in ' . $stackRow['file'] . ' at line ' . $stackRow['line'];
-				}
-				if (count($stack) > $maxCount) {
-					$loggableMessage .= "\n... truncated, stack size " . count($stack) . '';
-				}
-				$this->logger->error($loggableMessage);
-			}
 		}
+
+
+		if ($this->logger) {
+			$loggableMessage = $exception->getMessage();
+			$maxCount = 10;
+			$count = 0;
+			if ($exception->getCode()) {
+				$loggableMessage .= "\nCode " . $exception->getCode();
+			}
+			if ($exception->getFile()) {
+				$loggableMessage .= "\nin " . $exception->getFile() . ' at line ' . $exception->getLine();
+			}
+			$stack = $exception->getTrace();
+			foreach ($stack as $stackRow) {
+				if ($count >= $maxCount) {
+					break;
+				}
+				$count++;
+
+				$loggableMessage .= "\n";
+				$loggableMessage .= "#" . $count . ' ' . $stackRow['function'] . '() in ' . $stackRow['file'] . ' at line ' . $stackRow['line'];
+			}
+			if (count($stack) > $maxCount) {
+				$loggableMessage .= "\n... truncated, stack size " . count($stack) . '';
+			}
+			$this->logger->error($loggableMessage);
+		}
+
+
 
 		$response = $response->withJson($payload);
 
