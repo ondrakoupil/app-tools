@@ -31,6 +31,7 @@ class PDO {
 			$dbSettings->password,
 			array(
 				BasePDO::ATTR_ERRMODE => BasePDO::ERRMODE_EXCEPTION,
+				BasePDO::ATTR_DEFAULT_FETCH_MODE => BasePDO::FETCH_ASSOC,
 			)
 		);
 

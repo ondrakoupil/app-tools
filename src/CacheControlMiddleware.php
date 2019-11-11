@@ -21,7 +21,7 @@ class CacheControlMiddleware {
 	function __invoke(Request $request, Response $response, callable $next) {
 
 		if ($request->getMethod() === 'OPTIONS') {
-			return $next;
+			return $next($request, $response);
 		}
 
 		/** @var Response $nextResponse */
