@@ -98,10 +98,13 @@ class AppSettingsBuilder {
 		$fields = get_object_vars($settings);
 
 		foreach ($fields as $f => $val) {
-			if (!array_key_exists($f, $data)) {
-				throw new RuntimeException('App settings missing field: ' . $f);
+			if (array_key_exists($f, $data)) {
+				$v = $data[$f];
+			} else {
+				if ($val === null) {
+					throw new RuntimeException('App settings missing field: ' . $f);
+				}
 			}
-			$v = $data[$f];
 			if (isset($this->subItems[$f]) and $this->subItems[$f]) {
 				$classV = new $this->subItems[$f];
 				foreach (get_object_vars($classV) as $classVName => $classVVal) {
