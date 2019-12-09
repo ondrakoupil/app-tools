@@ -104,6 +104,7 @@ class AppSettingsBuilder {
 				if ($val === null) {
 					throw new RuntimeException('App settings missing field: ' . $f);
 				}
+				$v = $val;
 			}
 			if (isset($this->subItems[$f]) and $this->subItems[$f]) {
 				$classV = new $this->subItems[$f];
