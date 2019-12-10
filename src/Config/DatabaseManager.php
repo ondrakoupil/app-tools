@@ -131,6 +131,8 @@ class DatabaseManager extends ManagerWithDefaults {
 				$q .= '(?, ?)';
 			}
 
+			$q .= ' ON DUPLICATE KEY UPDATE `' . $this->valueColumn . '` = VALUES(`' . $this->valueColumn . '`)';
+
 			$this
 				->pdo
 				->prepare($q)
