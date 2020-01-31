@@ -41,6 +41,33 @@ class Structure {
 	}
 
 	/**
+	 * @param StructureItem $item
+	 *
+	 * @return StructureItem[]
+	 */
+	public function getAllDescendants(StructureItem $item) {
+		return $this->getDescendantsRecursive($item->id, 0);
+	}
+
+	protected function getDescendantsRecursive($id, $safetyLock) {
+		if ($safetyLock > 10) {
+			return array();
+		}
+		$item = $this->getItem($id);
+		if ($item) {
+			$descendants = $item->children;
+			foreach ($item->children as $child) {
+				$childDescendants = $this->getDescendantsRecursive($child->id, $safetyLock + 1);
+				$descendants = array_merge($descendants, $childDescendants);
+			}
+
+			return $descendants;
+		} else {
+			return array();
+		}
+	}
+
+	/**
 	 * @return void
 	 */
 	public function reload() {
