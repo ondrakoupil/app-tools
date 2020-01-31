@@ -5,6 +5,7 @@
     "require": {
         "ondrakoupil/tools": "^1",
         "ext-json": "*",
+        "ext-pdo": "*",
         "php": ">=7.1"
     },
     "suggest": {
