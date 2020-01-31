@@ -42,11 +42,16 @@ class Structure {
 
 	/**
 	 * @param StructureItem $item
+	 * @param bool $withSelf
 	 *
 	 * @return StructureItem[]
 	 */
-	public function getAllDescendants(StructureItem $item) {
-		return $this->getDescendantsRecursive($item->id, 0);
+	public function getAllDescendants(StructureItem $item, $withSelf = false) {
+		$d = $this->getDescendantsRecursive($item->id, 0);
+		if ($withSelf) {
+			$d[] = $item;
+		}
+		return $d;
 	}
 
 	protected function getDescendantsRecursive($id, $safetyLock) {
