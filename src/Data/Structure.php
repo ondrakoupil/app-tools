@@ -94,10 +94,12 @@ class Structure {
 
 				$this->data[$id] = new StructureItem($id, $master);
 
-				if (!isset($childrenIds[$master])) {
-					$childrenIds[$master] = array();
+				if ($master) {
+					if (!isset($childrenIds[$master])) {
+						$childrenIds[$master] = array();
+					}
+					$childrenIds[$master][] = $id;
 				}
-				$childrenIds[$master][] = $id;
 			}
 
 			foreach ($childrenIds as $masterId => $children) {
