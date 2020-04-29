@@ -6,7 +6,9 @@ use NotORM;
 use NotORM_Result;
 use NotORM_Row;
 use OndraKoupil\AppTools\Importing\Reader\ReaderInterface;
+use OndraKoupil\AppTools\Importing\Tools\DatabaseWrapper;
 use OndraKoupil\AppTools\Importing\Tools\MassDbInserter;
+use OndraKoupil\Tools\Strings;
 use RuntimeException;
 
 class DatabaseImporter implements ImporterInterface {
@@ -27,7 +29,7 @@ class DatabaseImporter implements ImporterInterface {
 	protected $afterSaveCallback;
 
 	/**
-	 * @var NotORM
+	 * @var DatabaseWrapper
 	 */
 	protected $db;
 
@@ -49,12 +51,12 @@ class DatabaseImporter implements ImporterInterface {
 	protected $importedItemsCount = 0;
 
 	/**
-	 * @param NotORM $db
+	 * @param DatabaseWrapper $db
 	 * @param string $tableName
 	 * @param ReaderInterface $reader
 	 * @param callable $transformCallback function($readRow, $itemPosition) => $dataToSaveToDb
 	 */
-	public function __construct(NotORM $db, string $tableName, ReaderInterface $reader, callable $transformCallback = null) {
+	public function __construct(DatabaseWrapper $db, string $tableName, ReaderInterface $reader, callable $transformCallback = null) {
 		$this->db = $db;
 		$this->tableName = $tableName;
 		$this->transformCallback = $transformCallback;
@@ -88,6 +90,17 @@ class DatabaseImporter implements ImporterInterface {
 	 */
 	function setReader(ReaderInterface $reader) {
 		$this->reader = $reader;
+	}
+
+	/**
+	 * Debugovací NotORM spojení
+	 *
+	 * @param NotORM $notORM
+	 *
+	 * @return void
+	 */
+	function setWriteDb(NotORM $notORM) {
+		$this->writeDb = $notORM;
 	}
 
 	/**
@@ -129,7 +142,14 @@ class DatabaseImporter implements ImporterInterface {
 	 * @return NotORM_Result
 	 */
 	protected function getTable() {
-		return $this->db->{$this->tableName}();
+		return $this->db->getDb()->{$this->tableName}();
+	}
+
+	/**
+	 * @return NotORM_Result
+	 */
+	protected function getInsertTable() {
+		return $this->db->getWriteDb()->{$this->tableName}();
 	}
 
 
@@ -139,7 +159,7 @@ class DatabaseImporter implements ImporterInterface {
 			return;
 		}
 
-		$givenId = $this->insertToDb($item);
+		$givenId = $this->insertToDb($savableItem);
 
 		if ($this->afterSaveCallback) {
 			call_user_func_array($this->afterSaveCallback, array($savableItem, $givenId, $item, $itemPosition));
@@ -154,8 +174,12 @@ class DatabaseImporter implements ImporterInterface {
 			$this->massInserter->insert($item);
 			$givenId = null;
 		} else {
-			$inserted = $this->getTable()->insert($item);
-			$givenId = $inserted[$this->idColumn];
+			$inserted = $this->getInsertTable()->insert($item);
+			if (!$inserted) {
+				$givenId = $this->db->generateFakeId();
+			} else {
+				$givenId = $inserted[$this->idColumn];
+			}
 		}
 		return $givenId;
 	}

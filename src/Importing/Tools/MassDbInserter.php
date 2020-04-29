@@ -21,7 +21,7 @@ use NotORM;
 class MassDbInserter {
 
 	/**
-	 * @var NotORM
+	 * @var DatabaseWrapper
 	 */
 	protected $db;
 
@@ -41,10 +41,10 @@ class MassDbInserter {
 	protected $buffer = array();
 
 	/**
-	 * @param NotORM $db
+	 * @param DatabaseWrapper $db
 	 * @param string $tableName
 	 */
-	public function __construct(NotORM $db, $tableName, $batchSize = 0) {
+	public function __construct(DatabaseWrapper $db, $tableName, $batchSize = 0) {
 		$this->db = $db;
 		$this->tableName = $tableName;
 		if ($batchSize) {
@@ -84,7 +84,7 @@ class MassDbInserter {
 			return;
 		}
 
-		$this->db->{$this->tableName}()->insert_multi($this->buffer);
+		$this->db->getWriteDb()->{$this->tableName}()->insert_multi($this->buffer);
 		$this->buffer = array();
 	}
 

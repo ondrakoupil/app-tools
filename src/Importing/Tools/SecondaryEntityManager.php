@@ -11,9 +11,10 @@ use NotORM_Result;
 class SecondaryEntityManager {
 
 	/**
-	 * @var NotORM
+	 * @var DatabaseWrapper
 	 */
 	protected $db;
+
 
 	/**
 	 * @var string
@@ -42,13 +43,13 @@ class SecondaryEntityManager {
 
 
 	/**
-	 * @param NotORM $db
+	 * @param DatabaseWrapper $db
 	 * @param string $tableName
 	 * @param string $nameColumn Který sloupec se má považovat za jméno?
 	 * @param string $idColumn
 	 */
 	function __construct(
-		NotORM $db,
+		DatabaseWrapper $db,
 		$tableName,
 		$nameColumn,
 		$idColumn = 'id'
@@ -72,14 +73,23 @@ class SecondaryEntityManager {
 	 */
 	protected function getTable() {
 		$tableName = $this->tableName;
-		return $this->db->$tableName();
+		return $this->db->getDb()->$tableName();
 	}
 
 	/**
 	 * @return NotORM_Result
 	 */
+	protected function getInsertTable() {
+		$tableName = $this->tableName;
+		return $this->db->getWriteDb()->$tableName();
+	}
+
+
+	/**
+	 * @return NotORM_Result
+	 */
 	protected function getAllItems() {
-		$request = $this->getTable();
+		$request = $this->getTable()->select($this->idColumn . ', ' . $this->nameColumn);
 		if ($this->allItemsCallback) {
 			$requestProcessed = call_user_func_array($this->allItemsCallback, array($request));
 			if ($requestProcessed) {
@@ -126,10 +136,17 @@ class SecondaryEntityManager {
 			if ($this->insertNewItemCallback) {
 				$data = call_user_func_array($this->insertNewItemCallback, array($data));
 			}
-			$inserted = $this->getTable()->insert($data);
+			$inserted = $this->getInsertTable()->insert($data);
+			if ($inserted) {
+				$givenId = $inserted[$this->idColumn];
+			} else {
+				$givenId = $this->db->generateFakeId();
+				$inserted = $data;
+				$inserted[$this->idColumn] = $givenId;
+			}
 			$processedName = $this->processName($name);
 			$this->dataCacheByName[$processedName] = $inserted;
-			$this->dataCacheById[$inserted[$this->idColumn]] = $inserted;
+			$this->dataCacheById[$givenId] = $inserted;
 			return $inserted;
 		}
 	}
