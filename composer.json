@@ -6,15 +6,14 @@
         "ondrakoupil/tools": "^1",
         "ext-json": "*",
         "ext-pdo": "*",
-        "php": ">=7.1",
-        "vrana/notorm": "dev-master"
+        "php": ">=7.1"
     },
     "suggest": {
         "slim/slim": "Required for middlewares",
         "psr/log": "Required for Logger",
         "nette/neon": "Required for AppSettings",
         "rah/danpu": "Required for BackupsManager",
-        "vrana/notorm": "Required for Importing"
+        "vrana/notorm": "Required for Importing and some other stuff"
     },
     "require-dev": {
         "nette/tester": "^2.2"
