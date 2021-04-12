@@ -25,9 +25,7 @@ class GZipOutputFilterMiddleware {
 			return $next($request, $response);
 		}
 
-		if ($request->hasHeader('Accept-Encoding') &&
-			stristr($request->getHeaderLine('Accept-Encoding'), 'gzip') === false
-		) {
+		if (!$request->hasHeader('Accept-Encoding') or $request->hasHeader('Accept-Encoding') and stristr($request->getHeaderLine('Accept-Encoding'), 'gzip') === false) {
 			// Browser doesn't accept gzip compression
 			return $next($request, $response);
 		}
