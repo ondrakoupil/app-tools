@@ -99,7 +99,7 @@ class DatabaseWrapper {
 	 * @return NotORM
 	 */
 	function getWriteDb() {
-		return $this->debugDb ?: $this->notORM;
+		return $this->debugDb ?: $this->getDb();
 	}
 
 	/**
