@@ -6,8 +6,9 @@
         "ondrakoupil/tools": "^1",
         "ext-json": "*",
         "ext-pdo": "*",
-        "php": ">=7.1"
-    },
+        "php": ">=7.1",
+		"ext-curl": "*"
+	},
     "suggest": {
         "slim/slim": "Required for middlewares",
         "psr/log": "Required for Logger",
