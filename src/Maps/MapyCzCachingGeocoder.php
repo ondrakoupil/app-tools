@@ -31,7 +31,7 @@ class MapyCzCachingGeocoder extends MapyCzGeocoder {
 	public function geocodeFromCoords(Coords $coords) {
 		$code = $coords->lat . ';' . $coords->lon;
 		if (array_key_exists($code, $this->cacheData['coords'])) {
-			return $this->cacheData['addr'][$code];
+			return $this->cacheData['coords'][$code];
 		}
 		$coded = parent::geocodeFromCoords($coords);
 		$this->cacheData['coords'][$code] = $coded;
