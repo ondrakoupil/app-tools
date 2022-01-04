@@ -7,10 +7,11 @@
         "ext-json": "*",
         "ext-pdo": "*",
         "php": ">=7.1",
-		"ext-curl": "*"
-	},
+		"ext-curl": "*",
+        "psr/http-message": "^1.0",
+        "psr/http-server-handler": "^1.0"
+    },
     "suggest": {
-        "slim/slim": "Required for middlewares",
         "psr/log": "Required for Logger",
         "nette/neon": "Required for AppSettings",
         "rah/danpu": "Required for BackupsManager",
