@@ -6,6 +6,9 @@ use DateTime;
 use Exception;
 use Psr\Log\AbstractLogger;
 
+/**
+ * Logger do souboru
+ */
 class Logger extends AbstractLogger {
 
 	protected $filePath;
