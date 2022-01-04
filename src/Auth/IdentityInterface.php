@@ -2,7 +2,7 @@
 
 namespace OndraKoupil\AppTools\Auth;
 
-interface Identity {
+interface IdentityInterface {
 
 	public function getId(): string;
 	public function toArray(): array;

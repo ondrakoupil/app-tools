@@ -25,7 +25,7 @@ class BackupsManager {
 	 *
 	 * @return BackupsManager
 	 */
-	static function createUsingDbConnectionSettings($backupsDir, DbConnectionSettings $dbSettings) {
+	static function createUsingDbConnectionSettings($backupsDir, DbConnectionSettings $dbSettings): BackupsManager {
 		$dsn = 'mysql:host=' . $dbSettings->host . ';dbname=' . $dbSettings->dbName . ';charset=' . $dbSettings->charset;
 		return new BackupsManager($backupsDir, $dsn, $dbSettings->user, $dbSettings->password);
 	}

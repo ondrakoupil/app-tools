@@ -12,8 +12,9 @@
         "psr/http-server-handler": "^1.0",
         "psr/http-server-middleware": "^1.0",
         "ext-zlib": "*",
-        "psr/log": "^1.1"
-    },
+        "psr/log": "^1.1",
+		"ext-mbstring": "*"
+	},
     "suggest": {
         "psr/log": "Required for Logger",
         "nette/neon": "Required for AppSettings",

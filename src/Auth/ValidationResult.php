@@ -19,16 +19,16 @@ class ValidationResult {
 	public $reason;
 
 	/**
-	 * @var Identity
+	 * @var IdentityInterface
 	 */
 	public $identity;
 
 	/**
 	 * @param bool $success
 	 * @param int $reason
-	 * @param Identity $identity
+	 * @param IdentityInterface|null $identity
 	 */
-	public function __construct(bool $success, int $reason = 0, Identity $identity = null) {
+	public function __construct(bool $success, int $reason = 0, IdentityInterface $identity = null) {
 		$this->success = $success;
 		$this->reason = $reason;
 		$this->identity = $identity;

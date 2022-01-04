@@ -13,7 +13,7 @@ class OneTimeTokenManager {
 		$this->hashPassword = $hashPassword;
 	}
 
-	function generate(Identity $identity, DateTime $validUntil, $data) {
+	function generate(IdentityInterface $identity, DateTime $validUntil, $data) {
 
 		$dataPayload = array(
 			'userId' => $identity->getId(),
