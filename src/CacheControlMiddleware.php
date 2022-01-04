@@ -4,48 +4,46 @@ namespace OndraKoupil\AppTools;
 
 use DateInterval;
 use DateTime;
-use Slim\Http\Request;
-use Slim\Http\Response;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 
-class CacheControlMiddleware {
+
+class CacheControlMiddleware implements MiddlewareInterface {
 
 	/**
 	 * @var int
 	 */
 	private $maxCacheLengthInSeconds;
 
-	function __construct($maxCacheLengthInSeconds = 0) {
+	function __construct(int $maxCacheLengthInSeconds = 0) {
 		$this->maxCacheLengthInSeconds = $maxCacheLengthInSeconds;
 	}
 
-	function __invoke(Request $request, Response $response, callable $next) {
+	function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface {
+
+		$response = $handler->handle($request);
 
 		if ($request->getMethod() === 'OPTIONS') {
-			return $next($request, $response);
+			return $response;
 		}
 
-		/** @var Response $nextResponse */
-		$nextResponse = $next($request, $response);
-
 		if (!$this->maxCacheLengthInSeconds) {
-			$newNextResponse =
-				$nextResponse
-					->withHeader('Cache-control', 'no-cache, no-store, must-revalidate')
-					->withHeader('Pragma', 'no-cache')
-					->withHeader('Expires', '0')
+			return $response
+				->withHeader('Cache-control', 'no-cache, no-store, must-revalidate')
+				->withHeader('Pragma', 'no-cache')
+				->withHeader('Expires', '0')
 			;
 		} else {
 			$expireTime = new DateTime('now');
-			$expireTime = $expireTime->add(new DateInterval('PT' . $this->maxCacheLengthInSeconds . 's'));
-			$newNextResponse =
-				$nextResponse
-					->withHeader('Cache-control', 'max-age=' . $this->maxCacheLengthInSeconds)
-					->withHeader('Pragma', 'public')
-					->withHeader('Expires', $expireTime->format('r'))
+			$expireTime = $expireTime->add(new DateInterval('PT' . $this->maxCacheLengthInSeconds . 'S'));
+			return $response
+				->withHeader('Cache-control', 'max-age=' . $this->maxCacheLengthInSeconds)
+				->withHeader('Pragma', 'public')
+				->withHeader('Expires', $expireTime->format('r'))
 			;
 		}
-
-		return $newNextResponse;
 
 	}
 
