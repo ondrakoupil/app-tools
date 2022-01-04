@@ -23,6 +23,11 @@ class PDO {
 
 	}
 
+	/**
+	 * @param DbConnectionSettings $dbSettings
+	 *
+	 * @return BasePDO
+	 */
 	static function factory(DbConnectionSettings $dbSettings) {
 
 		$pdo = new BasePDO(
@@ -37,6 +42,29 @@ class PDO {
 
 		return $pdo;
 
+	}
+
+	/**
+	 * @param DbConnectionSettings $dbSettings
+	 *
+	 * @return BasePDO
+	 */
+
+	static function sqlsrvFactory(DbConnectionSettings $dbSettings) {
+
+		$pdo = new BasePDO(
+			'sqlsrv:Server=' . $dbSettings->host . ';Database=' . $dbSettings->dbName . ';LoginTimeout=3;TrustServerCertificate=1',
+			$dbSettings->user,
+			$dbSettings->password,
+			array(
+				BasePDO::ATTR_TIMEOUT => 5,
+				BasePDO::ATTR_ERRMODE => BasePDO::ERRMODE_EXCEPTION,
+				BasePDO::ATTR_DEFAULT_FETCH_MODE => BasePDO::FETCH_ASSOC,
+				BasePDO::SQLSRV_ATTR_ENCODING => BasePDO::SQLSRV_ENCODING_UTF8,
+			)
+		);
+
+		return $pdo;
 	}
 
 }
