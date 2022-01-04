@@ -41,7 +41,10 @@ class BackupsManager {
 		$this->ignoredTables[] = $tableName;
 	}
 
-	function createBackup() {
+	/**
+	 * @return string Path to file with the dump
+	 */
+	function createBackup(): string {
 
 		$hash = substr(md5(rand(10000,99999) . time()), 5, 6);
 
@@ -64,19 +67,30 @@ class BackupsManager {
 
 		@chmod($dumpInto, 0666);
 
+		return $dumpInto;
+
 	}
 
+	/**
+	 * @param int $keepHours
+	 *
+	 * @return string[] List of dumps that were deleted
+	 */
 	function cleanOldBackups($keepHours = 96) {
 
+		$deleted = array();
 		$files = glob($this->backupsDir . '/*.sql');
 		if ($files) {
 			$now = time();
 			foreach ($files as $file) {
 				if ($now - filemtime($file) > $keepHours * 3600) {
 					unlink($file);
+					$deleted[] = $file;
 				}
 			}
 		}
+
+		return $deleted;
 
 	}
 
