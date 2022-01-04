@@ -1,15 +1,17 @@
 <?php
 
-namespace OndraKoupil\AppTools;
+namespace OndraKoupil\AppTools\Middleware;
 
 use DateInterval;
 use DateTime;
-use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
-
+/**
+ * Adds cache-busting HTTP headers
+ */
 class CacheControlMiddleware implements MiddlewareInterface {
 
 	/**

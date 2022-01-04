@@ -1,6 +1,6 @@
 <?php
 
-namespace OndraKoupil\AppTools;
+namespace OndraKoupil\AppTools\Middleware;
 
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
