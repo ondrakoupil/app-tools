@@ -9,7 +9,8 @@
         "php": ">=7.1",
 		"ext-curl": "*",
         "psr/http-message": "^1.0",
-        "psr/http-server-handler": "^1.0"
+        "psr/http-server-handler": "^1.0",
+        "psr/http-server-middleware": "^1.0"
     },
     "suggest": {
         "psr/log": "Required for Logger",

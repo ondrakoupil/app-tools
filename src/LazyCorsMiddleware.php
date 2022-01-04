@@ -5,6 +5,7 @@ namespace OndraKoupil\AppTools;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
 /**
@@ -40,7 +41,7 @@ use Psr\Http\Server\RequestHandlerInterface;
  * @see https://www.slimframework.com/docs/v4/cookbook/enable-cors.html
  *
  */
-class LazyCorsMiddleware {
+class LazyCorsMiddleware implements MiddlewareInterface {
 
 	/**
 	 * @var ResponseFactoryInterface
@@ -59,7 +60,7 @@ class LazyCorsMiddleware {
 		$this->availableMethodsGetter = $availableMethodsGetter;
 	}
 
-	function __invoke(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface {
+	function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface {
 
 		$originHeader = $request->getHeader('Origin');
 		if ($originHeader) {
