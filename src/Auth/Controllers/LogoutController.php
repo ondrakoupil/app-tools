@@ -45,7 +45,7 @@ class LogoutController {
 	}
 
 	function __invoke(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface {
-		return $this->run($request, $response, $args);
+		return $this->run($request, $response);
 	}
 
 	function run(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface {
