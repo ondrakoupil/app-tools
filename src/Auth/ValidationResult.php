@@ -8,6 +8,12 @@ class ValidationResult {
 	const REASON_EXPIRED_TOKEN = 2;
 	const REASON_BLOCKED_USER = 3;
 
+	const AUTH_FAIL_CODES = array(
+		self::REASON_UNKNOWN_TOKEN => 'UNKNOWN_TOKEN',
+		self::REASON_EXPIRED_TOKEN => 'EXPIRED_TOKEN',
+		self::REASON_BLOCKED_USER => 'BLOCKED_USER',
+	);
+
 	/**
 	 * @var boolean
 	 */

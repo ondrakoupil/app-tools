@@ -65,7 +65,8 @@ class AuthMiddleware implements MiddlewareInterface {
 	 * @param DateInterval|null $tokenValidity Automatically extend the token for this DateInterval on every successful access
 	 * @param string $tokenAttrName Attr name for token attribute from ExtractTokenMiddleware
 	 * @param string $userAttrName Attr name for Identity
-	 * @param callable|null $responseBuilder Optional callback to further decorate or format the 401 response: $responseBuilder(ResponseInterface $response, string $message, ServerRequestInterface $request) return ResponseInterface
+	 * @param callable|null $responseBuilder Optional callback to further decorate or format the 401 response: $responseBuilder(ResponseInterface $response, string $message, int $authFailCode, ServerRequestInterface $request) return ResponseInterface
+	 *    $authFailCode - viz ValidationResult
 	 */
 	function __construct(
 		AuthenticatorInterface $authenticator,
@@ -95,7 +96,7 @@ class AuthMiddleware implements MiddlewareInterface {
 		$token = $request->getAttribute($this->tokenName);
 		if (!$token) {
 			if ($this->authenticatedOnly) {
-				return $this->respondWith(401, 'You need to authenticate yourself.', $request);
+				return $this->respondWith(401, 'You need to authenticate yourself.', ValidationResult::REASON_UNKNOWN_TOKEN, $request);
 			} else {
 				return $handler->handle($request->withAttribute($this->userAttrName, null));
 			}
@@ -114,9 +115,13 @@ class AuthMiddleware implements MiddlewareInterface {
 			if ($this->authenticatedOnly) {
 
 				if ($result->reason === ValidationResult::REASON_EXPIRED_TOKEN) {
-					return $this->respondWith(403, 'Token is not valid anymore, please login again.', $request);
+					return $this->respondWith(401, 'Token is not valid anymore, please login again.', $result->reason, $request);
 				} else {
-					return $this->respondWith(403, 'Token is not valid.', $request);
+					if ($result->reason === ValidationResult::REASON_BLOCKED_USER) {
+						return $this->respondWith(401, 'Your account is blocked.', $result->reason, $request);
+					} else {
+						return $this->respondWith(401, 'Token is not valid.', $result->reason, $request);
+					}
 				}
 
 			} else {
@@ -127,17 +132,17 @@ class AuthMiddleware implements MiddlewareInterface {
 
 	}
 
-	protected function respondWith(int $code, string $message, RequestInterface $request): ResponseInterface {
+	protected function respondWith(int $code, string $message, int $authFailCode, RequestInterface $request): ResponseInterface {
 		$response = $this->responseFactory->createResponse($code);
 		if ($this->responseBuilder) {
 			$builder = $this->responseBuilder;
-			$response = $builder($response, $message, $request);
+			$response = $builder($response, $message, $authFailCode, $request);
 		} else {
 			$accepted = $request->getHeaderLine('Accept');
 			$jsonPos = strpos($accepted, 'application/json');
 			$textPos = strpos($accepted, 'text/');
 			if ($jsonPos !== false and ($textPos === false or $textPos > $jsonPos)) {
-				$response->getBody()->write(json_encode(array('error' => $message)));
+				$response->getBody()->write(json_encode(array('error' => $message, 'errorCode' => $authFailCode ? ValidationResult::AUTH_FAIL_CODES[$authFailCode] : '')));
 				$response = $response->withHeader('Content-Type', 'application/json');
 			} else {
 				$response->getBody()->write($message);
@@ -146,7 +151,6 @@ class AuthMiddleware implements MiddlewareInterface {
 		}
 		return $response;
 	}
-
 
 
 }
