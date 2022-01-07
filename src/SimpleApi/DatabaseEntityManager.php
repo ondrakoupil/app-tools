@@ -42,6 +42,21 @@ class DatabaseEntityManager implements EntityManagerInterface {
 
 	function createItem(array $data): array {
 		$table = $this->tableName;
+
+		if ($this->spec and $this->spec->beforeSaveCallback) {
+			$c = $this->spec->beforeSaveCallback;
+			$data = $c(null, $data);
+		}
+		if ($this->spec and $this->spec->uniqueFields) {
+			foreach ($this->spec->uniqueFields as $uniqueField) {
+				$data[$uniqueField] = $this->findUnusedValue($uniqueField, $data[$uniqueField]);
+			}
+		}
+		if ($this->spec and $this->spec->uniqueOrEmptyFields) {
+			foreach ($this->spec->uniqueOrEmptyFields as $uniqueField) {
+				$data[$uniqueField] = null;
+			}
+		}
 		$inserted = $this->notORM->$table()->insert($data);
 
 		return iterator_to_array($inserted);
@@ -67,6 +82,11 @@ class DatabaseEntityManager implements EntityManagerInterface {
 		if (isset($data['id'])) {
 			$data['id'] = null;
 		}
+		if ($this->spec and $this->spec->beforeSaveCallback) {
+			$c = $this->spec->beforeSaveCallback;
+			$data = $c($id, $data);
+		}
+
 		$is = $this->notORM->$table()->where('id', $id)->fetch();
 		if ($is) {
 			$is->update($data);
@@ -86,6 +106,10 @@ class DatabaseEntityManager implements EntityManagerInterface {
 			$is = iterator_to_array($is);
 			$is['id'] = null;
 
+			if ($this->spec and $this->spec->beforeSaveCallback) {
+				$c = $this->spec->beforeSaveCallback;
+				$is = $c(null, $is);
+			}
 			if ($this->spec and $this->spec->uniqueFields) {
 				foreach ($this->spec->uniqueFields as $uniqueField) {
 					$is[$uniqueField] = $this->findUnusedValue($uniqueField, $is[$uniqueField]);
@@ -110,6 +134,10 @@ class DatabaseEntityManager implements EntityManagerInterface {
 
 		if (!$requested) {
 			return Strings::randomString(16, true);
+		}
+
+		if (preg_match('~^(.+)-[0-9]+$~', $requested, $matches)) {
+			$requested = $matches[1];
 		}
 
 		$isThere = $this->notORM->$table()->where($field, $requested)->fetch();

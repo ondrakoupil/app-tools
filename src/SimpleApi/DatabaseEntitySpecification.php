@@ -4,7 +4,9 @@ namespace OndraKoupil\AppTools\SimpleApi;
 
 class DatabaseEntitySpecification {
 
-	public $uniqueFields = array();
-	public $uniqueOrEmptyFields = array();
+	public array $uniqueFields = array();
+	public array $uniqueOrEmptyFields = array();
+
+	public $beforeSaveCallback;
 
 }

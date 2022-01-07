@@ -6,7 +6,7 @@
         "ondrakoupil/tools": "^1.1",
         "ext-json": "*",
         "ext-pdo": "*",
-        "php": ">=7.1",
+        "php": ">=7.4",
 		"ext-curl": "*",
         "psr/http-message": "^1.0",
         "psr/http-server-handler": "^1.0",
