@@ -218,6 +218,7 @@ class FileManager {
 
 	protected function log($message, $filename, $context) {
 		if ($this->logger) {
+			$context = Arrays::arrayize($context);
 			$message = $message . ' - filename ' . $filename . ', context [' . implode(', ', $context) . ']';
 			$this->logger->info($message);
 		}
@@ -225,6 +226,7 @@ class FileManager {
 
 	protected function logError($err, $filename, $context) {
 		if ($this->logger) {
+			$context = Arrays::arrayize($context);
 			$err = $err . ' - filename ' . $filename . ', context [' . implode(', ', $context) . ']';
 			$this->logger->error($err);
 		}
