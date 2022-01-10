@@ -42,6 +42,16 @@ class EntityController {
 		return $this->respondWithJson($response, $this->manager->getAllItems());
 	}
 
+	function view(ServerRequestInterface $request, ResponseInterface $response, string $id, array $parts = array()): ResponseInterface {
+		try {
+			$data = $this->manager->getItem($id, $parts);
+			return $this->respondWithJson($response, $data);
+		} catch (ItemNotFoundException $e) {
+			return $this->respondWithError($response, 404, 'Item with this ID was not found.');
+		}
+
+	}
+
 	function create(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface {
 		$data = $request->getParsedBody();
 		if (!$data) {

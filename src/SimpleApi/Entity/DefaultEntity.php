@@ -53,5 +53,9 @@ class DefaultEntity implements EntitySpec {
 		return (is_numeric($id) or is_int($id));
 	}
 
+	function expandItem($id, array $data, $specs = null): array {
+		return $data;
+	}
+
 
 }

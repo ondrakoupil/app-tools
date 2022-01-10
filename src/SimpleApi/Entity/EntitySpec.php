@@ -17,15 +17,17 @@ interface EntitySpec {
 	function getSlugFields(): array;
 
 	function beforeCreate($data): array;
-	function afterCreate($id, $data): void;
+	function afterCreate($id, array $data): void;
 
-	function beforeDelete($data): void;
-	function afterDelete($data): void;
+	function beforeDelete(array $data): void;
+	function afterDelete(array $data): void;
 
-	function beforeUpdate($id, $data): array;
-	function afterUpdate($id, $data): void;
+	function beforeUpdate($id, array $data): array;
+	function afterUpdate($id, array $data): void;
 
-	function beforeClone($id, $data): array;
-	function afterClone($originalId, $newId, $data): void;
+	function beforeClone($id, array $data): array;
+	function afterClone($originalId, $newId, array $data): void;
+
+	function expandItem($id, array $data, $specs = null): array;
 
 }

@@ -40,7 +40,7 @@ class DatabaseEntityManager implements EntityManagerInterface {
 	 * @return NotORM_Row
 	 * @throws ItemNotFoundException
 	 */
-	function getItem(string $id): NotORM_Row {
+	protected function getItemRow(string $id): NotORM_Row {
 		if (!$this->spec->isFormallyValidId($id)) {
 			throw new InvalidArgumentException('Invalid ID ' . $id);
 		}
@@ -52,6 +52,11 @@ class DatabaseEntityManager implements EntityManagerInterface {
 		return $item;
 	}
 
+	function getItem(string $id, $context = null): array {
+		$basicData = iterator_to_array($this->getItemRow($id));
+		return $this->spec->expandItem($id, $basicData, $context);
+	}
+
 	function getAllItems(): array {
 		$table = $this->tableName;
 		return array_values(array_map('iterator_to_array', iterator_to_array($this->notORM->$table())));
@@ -61,9 +66,10 @@ class DatabaseEntityManager implements EntityManagerInterface {
 		$table = $this->tableName;
 		$data = $this->processSlugFields($data);
 		$data = $this->spec->beforeCreate($data);
-		$inserted = iterator_to_array($this->notORM->$table()->insert($data));
-		$this->spec->afterCreate($inserted['id'], $inserted);
-		return $inserted;
+		$inserted = $this->notORM->$table()->insert($data);
+		$insertedItem = iterator_to_array($this->getItemRow($inserted['id']));
+		$this->spec->afterCreate($inserted['id'], $insertedItem);
+		return $insertedItem;
 	}
 
 	/**
@@ -73,7 +79,7 @@ class DatabaseEntityManager implements EntityManagerInterface {
 		if (!$this->spec->isFormallyValidId($id)) {
 			throw new InvalidArgumentException('Invalid ID ' . $id);
 		}
-		$deletedRow = $this->getItem($id);
+		$deletedRow = $this->getItemRow($id);
 		$deletedArray = iterator_to_array($deletedRow);
 		$this->spec->beforeDelete($deletedArray);
 		$deletedRow->delete();
@@ -89,7 +95,7 @@ class DatabaseEntityManager implements EntityManagerInterface {
 	function deleteManyItems(array $id): void {
 		$items = array();
 		foreach ($id as $itemId) {
-			$items[] = $this->getItem($itemId);
+			$items[] = $this->getItemRow($itemId);
 		}
 		foreach ($items as $item) {
 			$this->spec->beforeDelete(iterator_to_array($item));
@@ -112,11 +118,11 @@ class DatabaseEntityManager implements EntityManagerInterface {
 			$data['id'] = null;
 		}
 		$data = $this->spec->beforeUpdate($id, $data);
-		$is = $this->getItem($id);
+		$is = $this->getItemRow($id);
 		$data = $this->processSlugFields($data, $id);
 
 		$is->update($data);
-		$result = $this->getItem($id);
+		$result = $this->getItemRow($id);
 
 		$this->spec->afterUpdate($id, iterator_to_array($result));
 	}
@@ -129,7 +135,7 @@ class DatabaseEntityManager implements EntityManagerInterface {
 			throw new InvalidArgumentException('Invalid ID ' . $id);
 		}
 		$table = $this->tableName;
-		$original = iterator_to_array($this->getItem($id));
+		$original = iterator_to_array($this->getItemRow($id));
 		$original['id'] = null;
 		$this->clearSlugFields($original);
 		$original = $this->processSlugFields($original);
@@ -197,7 +203,7 @@ class DatabaseEntityManager implements EntityManagerInterface {
 				} else {
 					if ($currentId) {
 						if (!$existingData) {
-							$existingData = $this->getItem($currentId);
+							$existingData = $this->getItemRow($currentId);
 						}
 						$valueBase[] = $existingData[$basedOnField] ?? '';
 					}

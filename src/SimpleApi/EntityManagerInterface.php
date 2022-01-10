@@ -29,4 +29,13 @@ interface EntityManagerInterface {
 	 */
 	function cloneItem(string $id): array;
 
+	/**
+	 * @param string $id
+	 * @param mixed $context
+	 *
+	 * @return array
+	 * @throws ItemNotFoundException
+	 */
+	function getItem(string $id, $context = null): array;
+
 }
