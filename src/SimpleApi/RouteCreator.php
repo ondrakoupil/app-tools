@@ -45,13 +45,10 @@ class RouteCreator {
 		$writeGroup = $app->group($pathPrefix, function (RouteCollectorProxy $group) use ($app, $controllerClassNameOrToken) {
 
 			$group->post('', array($controllerClassNameOrToken, 'create'));
-
 			$group->get('/{id:[0-9]+}', array($controllerClassNameOrToken, 'view'));
-
 			$group->patch('/{id:[0-9]+}', array($controllerClassNameOrToken, 'edit'));
-
 			$group->delete('/{id:[0-9]+}', array($controllerClassNameOrToken, 'delete'));
-
+			$group->delete('', array($controllerClassNameOrToken, 'deleteMany'));
 			$group->post('/{id:[0-9]+}', array($controllerClassNameOrToken, 'clone'));
 
 		});

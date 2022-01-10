@@ -13,6 +13,13 @@ interface EntityManagerInterface {
 	function deleteItem(string $id): void;
 
 	/**
+	 * @param string[] $id
+	 * @throws ItemNotFoundException
+	 * @return void
+	 */
+	function deleteManyItems(array $id): void;
+
+	/**
 	 * @throws ItemNotFoundException
 	 */
 	function updateItem(string $id, array $data): void;

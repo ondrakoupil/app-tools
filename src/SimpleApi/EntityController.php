@@ -3,6 +3,7 @@
 namespace OndraKoupil\AppTools\SimpleApi;
 
 use Exception;
+use OndraKoupil\Tools\Arrays;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -57,6 +58,21 @@ class EntityController {
 		} catch (ItemNotFoundException $e) {
 			return $this->respondWithError($response, 404, 'Item with this ID was not found.');
 		}
+	}
+
+	function deleteMany(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface {
+		$body = $request->getParsedBody();
+		if (!($body['id'] ?? null)) {
+			return $this->respondWithError($response, 400, 'Missing [id] parameter with ID\'s to delete.');
+		}
+		$ids = Arrays::arrayize($body['id']);
+		try {
+			$this->manager->deleteManyItems($ids);
+		} catch (ItemNotFoundException $e) {
+			return $this->respondWithError($response, 404, 'Item with ID ' . $e->notFoundId . ' not found.');
+		}
+		return $this->respondWithNothing($response);
+
 	}
 
 	function edit(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface {

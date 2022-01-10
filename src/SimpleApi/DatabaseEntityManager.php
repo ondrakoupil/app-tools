@@ -2,152 +2,259 @@
 
 namespace OndraKoupil\AppTools\SimpleApi;
 
+use InvalidArgumentException;
 use NotORM;
+use NotORM_Row;
+use OndraKoupil\AppTools\SimpleApi\Entity\DefaultEntity;
+use OndraKoupil\AppTools\SimpleApi\Entity\EntitySpec;
+use OndraKoupil\AppTools\SimpleApi\Entity\SlugField;
 use OndraKoupil\Tools\Strings;
 
 class DatabaseEntityManager implements EntityManagerInterface {
 
-	/**
-	 * @var NotORM
-	 */
-	protected $notORM;
+	protected NotORM $notORM;
 
-	/**
-	 * @var string
-	 */
-	protected $tableName;
+	protected string $tableName;
 
-	/**
-	 * @var DatabaseEntitySpecification|null
-	 */
-	protected $spec;
+	protected EntitySpec $spec;
 
 	function __construct(
-		NotORM                      $notORM,
-		string                      $tableName,
-		DatabaseEntitySpecification $spec = null
+		NotORM     $notORM,
+		string     $tableName,
+		EntitySpec $spec = null
 	) {
 
 		$this->notORM = $notORM;
 		$this->tableName = $tableName;
-		$this->spec = $spec;
+		
+		if ($spec) {
+			$this->spec = $spec;
+		} else {
+			$this->spec = new DefaultEntity();
+		}
 	}
 
+	/**
+	 * @param string $id
+	 *
+	 * @return NotORM_Row
+	 * @throws ItemNotFoundException
+	 */
+	function getItem(string $id): NotORM_Row {
+		if (!$this->spec->isFormallyValidId($id)) {
+			throw new InvalidArgumentException('Invalid ID ' . $id);
+		}
+		$table = $this->tableName;
+		$item = $this->notORM->$table()->where('id', $id)->fetch();
+		if (!$item) {
+			throw new ItemNotFoundException($id);
+		}
+		return $item;
+	}
 
 	function getAllItems(): array {
 		$table = $this->tableName;
-
 		return array_values(array_map('iterator_to_array', iterator_to_array($this->notORM->$table())));
 	}
 
 	function createItem(array $data): array {
 		$table = $this->tableName;
-
-		if ($this->spec and $this->spec->beforeSaveCallback) {
-			$c = $this->spec->beforeSaveCallback;
-			$data = $c(null, $data);
-		}
-		if ($this->spec and $this->spec->uniqueFields) {
-			foreach ($this->spec->uniqueFields as $uniqueField) {
-				$data[$uniqueField] = $this->findUnusedValue($uniqueField, $data[$uniqueField]);
-			}
-		}
-		if ($this->spec and $this->spec->uniqueOrEmptyFields) {
-			foreach ($this->spec->uniqueOrEmptyFields as $uniqueField) {
-				$data[$uniqueField] = null;
-			}
-		}
-		$inserted = $this->notORM->$table()->insert($data);
-
-		return iterator_to_array($inserted);
+		$data = $this->processSlugFields($data);
+		$data = $this->spec->beforeCreate($data);
+		$inserted = iterator_to_array($this->notORM->$table()->insert($data));
+		$this->spec->afterCreate($inserted['id'], $inserted);
+		return $inserted;
 	}
 
 	/**
 	 * @throws ItemNotFoundException
 	 */
 	function deleteItem(string $id): void {
-		$table = $this->tableName;
-		$is = $this->notORM->$table()->where('id', $id)->fetch();
-		if ($is) {
-			$is->delete();
+		if (!$this->spec->isFormallyValidId($id)) {
+			throw new InvalidArgumentException('Invalid ID ' . $id);
 		}
-		throw new ItemNotFoundException();
+		$deletedRow = $this->getItem($id);
+		$deletedArray = iterator_to_array($deletedRow);
+		$this->spec->beforeDelete($deletedArray);
+		$deletedRow->delete();
+		$this->spec->afterDelete($deletedArray);
+	}
+
+	/**
+	 * @param array $id
+	 *
+	 * @return void
+	 * @throws ItemNotFoundException
+	 */
+	function deleteManyItems(array $id): void {
+		$items = array();
+		foreach ($id as $itemId) {
+			$items[] = $this->getItem($itemId);
+		}
+		foreach ($items as $item) {
+			$this->spec->beforeDelete(iterator_to_array($item));
+		}
+		$table = $this->tableName;
+		$this->notORM->$table()->where('id', $id)->delete();
+		foreach ($items as $item) {
+			$this->spec->afterDelete(iterator_to_array($item));
+		}
 	}
 
 	/**
 	 * @throws ItemNotFoundException
 	 */
 	function updateItem(string $id, array $data): void {
-		$table = $this->tableName;
+		if (!$this->spec->isFormallyValidId($id)) {
+			throw new InvalidArgumentException('Invalid ID ' . $id);
+		}
 		if (isset($data['id'])) {
 			$data['id'] = null;
 		}
-		if ($this->spec and $this->spec->beforeSaveCallback) {
-			$c = $this->spec->beforeSaveCallback;
-			$data = $c($id, $data);
-		}
+		$data = $this->spec->beforeUpdate($id, $data);
+		$is = $this->getItem($id);
+		$data = $this->processSlugFields($data, $id);
 
-		$is = $this->notORM->$table()->where('id', $id)->fetch();
-		if ($is) {
-			$is->update($data);
-		}
-		throw new ItemNotFoundException();
+		$is->update($data);
+		$result = $this->getItem($id);
+
+		$this->spec->afterUpdate($id, iterator_to_array($result));
 	}
 
 	/**
 	 * @throws ItemNotFoundException
 	 */
 	function cloneItem(string $id): array {
-		$table = $this->tableName;
-		$is = $this->notORM->$table()->where('id', $id)->fetch();
-
-		if ($is) {
-
-			$is = iterator_to_array($is);
-			$is['id'] = null;
-
-			if ($this->spec and $this->spec->beforeSaveCallback) {
-				$c = $this->spec->beforeSaveCallback;
-				$is = $c(null, $is);
-			}
-			if ($this->spec and $this->spec->uniqueFields) {
-				foreach ($this->spec->uniqueFields as $uniqueField) {
-					$is[$uniqueField] = $this->findUnusedValue($uniqueField, $is[$uniqueField]);
-				}
-			}
-			if ($this->spec and $this->spec->uniqueOrEmptyFields) {
-				foreach ($this->spec->uniqueOrEmptyFields as $uniqueField) {
-					$is[$uniqueField] = null;
-				}
-			}
-
-			$created = $this->notORM->$table()->insert($is);
-
-			return iterator_to_array($created);
+		if (!$this->spec->isFormallyValidId($id)) {
+			throw new InvalidArgumentException('Invalid ID ' . $id);
 		}
-		throw new ItemNotFoundException();
+		$table = $this->tableName;
+		$original = iterator_to_array($this->getItem($id));
+		$original['id'] = null;
+		$this->clearSlugFields($original);
+		$original = $this->processSlugFields($original);
+		$this->spec->beforeClone($id, $original);
+		$created = iterator_to_array($this->notORM->$table()->insert($original));
+		$this->spec->afterClone($id, $created['id'], $created);
+		return $created;
 	}
 
+	/**
+	 * Return data item with all slug fields as empty strings.
+	 *
+	 * @param array $data
+	 *
+	 * @return array
+	 */
+	protected function clearSlugFields(array $data): array {
+		foreach ($this->spec->getSlugFields() as $slugField) {
+			$data[$slugField->fieldName] = '';
+		}
 
-	protected function findUnusedValue(string $field, string $requested) {
+		return $data;
+	}
+
+	/**
+	 * For all slug fields, check if value is unique and if not, generate new value that is unique.
+	 *
+	 * @param array $data
+	 * @param string $currentId If updating existing item, pass here its ID so that its values will be considered
+	 *     unique.
+	 * @param string[] $onlyTheseSlugFields If filled, only these slug fields will be processed.
+	 *
+	 * @return array
+	 */
+	protected function processSlugFields(array $data, string $currentId = '', array $onlyTheseSlugFields = array()) {
+
+		$fieldsToProcess = $this->spec->getSlugFields();
+		if ($onlyTheseSlugFields) {
+			$fieldsToProcess = array_filter($fieldsToProcess, function ($slugField) use ($onlyTheseSlugFields) {
+				return in_array($slugField->fieldName, $onlyTheseSlugFields);
+			});
+		}
+
+		$existingData = null;
+
+		foreach ($fieldsToProcess as $slugField) {
+
+			if ($slugField->syncAfterCreating) {
+				$data[$slugField->fieldName] = '';
+			}
+
+			if ($data[$slugField->fieldName] ?? '') {
+				// Check if is unique
+				$isUsed = $this->checkIfValueIsUsed($slugField->fieldName, $data[$slugField->fieldName], $currentId);
+				if (!$isUsed) {
+					continue;
+				}
+			}
+
+			// Find unique value
+			$valueBase = array();
+			foreach ($slugField->basedOnFields as $basedOnField) {
+				if (isset($data[$basedOnField]) ?? '') {
+					$valueBase[] = $data[$basedOnField] ?? '';
+				} else {
+					if ($currentId) {
+						if (!$existingData) {
+							$existingData = $this->getItem($currentId);
+						}
+						$valueBase[] = $existingData[$basedOnField] ?? '';
+					}
+				}
+			}
+			$valueBaseString = implode(' ', $valueBase);
+
+			$value = Strings::webalize($valueBaseString);
+			$value = $this->findUnusedValue($slugField->fieldName, $value, $currentId);
+			$data[$slugField->fieldName] = $value;
+
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Check if value is unique
+	 *
+	 * @param string $field
+	 * @param string $value
+	 * @param string $currentId
+	 *
+	 * @return bool
+	 */
+	protected function checkIfValueIsUsed(string $field, string $value, string $currentId = ''): bool {
+		$table = $this->tableName;
+		$isThereReq = $this->notORM->$table()->select('id')->where($field, $value);
+		if ($currentId) {
+			$isThereReq->where('id != ?', $currentId);
+		}
+		$isThere = $isThereReq->fetch();
+
+		return !!$isThere;
+	}
+
+	protected function findUnusedValue(string $field, string $requested, string $currentId = ''): string {
 		$table = $this->tableName;
 
 		if (!$requested) {
 			return Strings::randomString(16, true);
 		}
 
-		if (preg_match('~^(.+)-[0-9]+$~', $requested, $matches)) {
+		if (!$this->checkIfValueIsUsed($field, $requested, $currentId)) {
+			return $requested;
+		}
+
+		if (preg_match('~^(.+)-[0-9]{1,2}$~', $requested, $matches)) {
 			$requested = $matches[1];
 		}
 
-		$isThere = $this->notORM->$table()->where($field, $requested)->fetch();
-		if (!$isThere) {
-			return $requested;
-		}
 		$allValues = array_fill_keys(
 			array_values(
 				array_map(
-					function($i) use ($field) { return $i[$field]; },
+					function ($i) use ($field) {
+						return $i[$field];
+					},
 					iterator_to_array(
 						$this->notORM->$table()->select($field)
 					)
