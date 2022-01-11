@@ -84,18 +84,23 @@ class PreresizedImageFileManager {
 		}
 	}
 
-	public function getImageUrl(string $filename, string $version): string {
-		return $this->fileManager->getUrlOfFile($filename, $version);
+	public function getImageUrl(string $filename, string $version, bool $addTimestamps = false): string {
+		$url = $this->fileManager->getUrlOfFile($filename, $version);
+		if ($addTimestamps) {
+			$t = $this->fileManager->getFileTime($filename, $version);
+			$url .= '?t=' . $t;
+		}
+		return $url;
 	}
 
 
-	public function getImageAllUrls(string $filename): array {
+	public function getImageAllUrls(string $filename, bool $addTimestamps = false): array {
 		$versions = array(
-			$this->originalFileContext => $this->getOriginalUrl($filename)
+			$this->originalFileContext => $this->getOriginalUrl($filename, $addTimestamps)
 		);
 		foreach ($this->versions as $version) {
 			$versionId = $version->getId();
-			$versions[$versionId] = $this->getImageUrl($filename, $versionId);
+			$versions[$versionId] = $this->getImageUrl($filename, $versionId, $addTimestamps);
 		}
 		return $versions;
 	}
@@ -108,7 +113,7 @@ class PreresizedImageFileManager {
 		return $this->getImagePath($filename, $this->originalFileContext);
 	}
 
-	public function getOriginalUrl(string $filename): string {
+	public function getOriginalUrl(string $filename, bool $addTimestamp = false): string {
 		return $this->getImageUrl($filename, $this->originalFileContext);
 	}
 
