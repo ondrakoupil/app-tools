@@ -6,6 +6,9 @@ use InvalidArgumentException;
 use OndraKoupil\AppTools\FileManager\Images\ImageVersion;
 use RuntimeException;
 
+/**
+ * Image manager that creates image versions in the moment of the image's upload.
+ */
 class PreresizedImageFileManager {
 
 	const ORIGINAL = 'original';
@@ -83,6 +86,18 @@ class PreresizedImageFileManager {
 
 	public function getImageUrl(string $filename, string $version): string {
 		return $this->fileManager->getUrlOfFile($filename, $version);
+	}
+
+
+	public function getImageAllUrls(string $filename): array {
+		$versions = array(
+			$this->originalFileContext => $this->getOriginalUrl($filename)
+		);
+		foreach ($this->versions as $version) {
+			$versionId = $version->getId();
+			$versions[$versionId] = $this->getImageUrl($filename, $versionId);
+		}
+		return $versions;
 	}
 
 	public function getImagePath(string $filename, string $version): string {
