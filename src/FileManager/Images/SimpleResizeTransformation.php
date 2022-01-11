@@ -2,80 +2,87 @@
 
 namespace OndraKoupil\AppTools\FileManager\Images;
 
+use InvalidArgumentException;
 use RuntimeException;
 
 class SimpleResizeTransformation implements ImageTransformationInterface {
 
-	private int $width;
+	const COVER = 'cover';
+	const CONTAIN = 'contain';
+	const CROP = 'crop';
+	const STRETCH = 'stretch';
 
-	private int $height;
+	protected int $width;
 
-	private int $quality;
+	protected int $height;
 
-	private string $outFormat;
+	protected string $mode;
 
-	/**
-	 *
-	 *
-	 * @param int $width
-	 * @param int $height
-	 */
-	function __construct(int $width, int $height, $quality = 85, $outFormat = '') {
+	function __construct(int $width, int $height, string $mode = self::CONTAIN) {
 		$this->width = $width;
 		$this->height = $height;
-		$this->quality = $quality;
-		$this->outFormat = $outFormat;
+		$this->mode = $mode;
 	}
 
-	function transform(string $path): void {
-
-		$type = mime_content_type($path);
-
-		if ($type === 'image/svg+xml') {
-			return;
-		}
-
-		$resource = null;
-
-		switch ($type) {
-			case 'image/jpeg':
-				$resource = imagecreatefromjpeg($path);
-				break;
-
-			case 'image/png':
-				$resource = imagecreatefrompng($path);
-				break;
-
-			case 'image/webp':
-				$resource = imagecreatefromwebp($path);
-				break;
-
-			default:
-				throw new RuntimeException('Unknown format: ' . $type);
-		}
+	function transform($resource) {
 
 		$origWidth = imagesx($resource);
 		$origHeight = imagesy($resource);
-		$canvas = imagecreatetruecolor($this->width, $this->height);
 
-		imagecopyresampled($canvas, $resource, 0, 0, 0, 0, $this->width, $this->height, $origWidth, $origHeight);
+		switch ($this->mode) {
 
-		$outputType = $this->outFormat ?: $type;
-
-		switch ($outputType) {
-			case 'image/jpeg':
-				imagejpeg($canvas, $path, $this->quality ?: 85);
+			case self::STRETCH:
+				if ($this->width === 0 or $this->height === 0) {
+					throw new InvalidArgumentException('In stretch mode, both width and height must be set.');
+				}
+				$canvas = imagecreatetruecolor($this->width, $this->height);
+				imagecopyresampled($canvas, $resource, 0, 0, 0, 0, $this->width, $this->height, $origWidth, $origHeight);
 				break;
 
-			case 'image/png':
-				imagepng($canvas, $path);
+			case self::CONTAIN:
+			case self::COVER:
+				if (!$this->width and !$this->height) {
+					throw new InvalidArgumentException('In ' . $this->mode . ' mode, at least width or height must be set.');
+				}
+				if ($origWidth < $this->width and $origHeight < $this->height) {
+					// Smaller in both ways - keep intact
+					$canvas = $resource;
+				} else {
+
+					$widthRatio = $this->width / $origWidth;
+					$heightRatio = $this->height / $origHeight;
+
+					if ($this->mode === self::COVER) {
+						$targetRatio = max($widthRatio, $heightRatio);
+					} else {
+						if (!$widthRatio) {
+							$targetRatio = $heightRatio;
+						} elseif (!$heightRatio) {
+							$targetRatio = $widthRatio;
+						} else {
+							$targetRatio = min($widthRatio, $heightRatio);
+						}
+					}
+
+					$targetWidth = ceil($origWidth * $targetRatio);
+					$targetHeight = ceil($origHeight * $targetRatio);
+
+					$canvas = imagecreatetruecolor($targetWidth, $targetHeight);
+					imagecopyresampled($canvas, $resource, 0, 0, 0, 0, $targetWidth, $targetHeight, $origWidth, $origHeight);
+				}
+
 				break;
 
-			case 'image/webp':
-				imagewebp($canvas, $path, $this->quality);
-				break;
+			case self::CROP:
+
+				throw new RuntimeException('Not implemented (yet!)');
+
+			default:
+				throw new InvalidArgumentException('Invalid resize mode: ' . $this->mode);
+
 		}
 
+		return $canvas;
 
 	}
 

@@ -13,16 +13,16 @@
         "psr/http-server-middleware": "^1.0",
         "ext-zlib": "*",
         "psr/log": "^1.1",
-		"ext-mbstring": "*"
-	},
+		"ext-mbstring": "*",
+		"ext-fileinfo": "For images transormations",
+        "ext-gd": "For images transormations"
+    },
     "suggest": {
         "psr/log": "Required for Logger",
         "nette/neon": "Required for AppSettings",
         "rah/danpu": "Required for BackupsManager",
         "vrana/notorm": "Required for Importing, SimpleApi and some other stuff",
-        "slim/slim": "Required from Slim stuff. Use v4.",
-        "ext-fileinfo": "For images transormations",
-        "ext-gd": "For images transormations"
+        "slim/slim": "Required from Slim stuff. Use v4."
     },
     "require-dev": {
         "nette/tester": "^2.2",
