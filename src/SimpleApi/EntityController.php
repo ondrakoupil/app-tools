@@ -38,14 +38,14 @@ class EntityController {
 		return $r;
 	}
 
-	function list(ServerRequestInterface $request, ResponseInterface $response, string $partsAsString = ''): ResponseInterface {
-		$parts = self::convertPartsStringToArray($partsAsString);
+	function list(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface {
+		$parts = $this->getPartsFromRequest($request);
 		return $this->respondWithJson($response, $this->manager->getAllItems($parts));
 	}
 
-	function view(ServerRequestInterface $request, ResponseInterface $response, string $id, string $partsAsString = ''): ResponseInterface {
+	function view(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface {
 		try {
-			$parts = self::convertPartsStringToArray($partsAsString);
+			$parts = $this->getPartsFromRequest($request);
 			$data = $this->manager->getItem($id, $parts);
 			return $this->respondWithJson($response, $data);
 		} catch (ItemNotFoundException $e) {
@@ -53,10 +53,10 @@ class EntityController {
 		}
 	}
 
-	function viewMany(ServerRequestInterface $request, ResponseInterface $response, string $idAsStringWithCommas, string $partsAsString = ''): ResponseInterface {
+	function viewMany(ServerRequestInterface $request, ResponseInterface $response, string $idAsStringWithCommas): ResponseInterface {
 		try {
 			$ids = array_values(array_map('trim', explode(',', $idAsStringWithCommas)));
-			$parts = self::convertPartsStringToArray($partsAsString);
+			$parts = $this->getPartsFromRequest($request);
 			$data = $this->manager->getManyItems($ids, $parts);
 			return $this->respondWithJson($response, $data);
 		} catch (ItemNotFoundException $e) {
@@ -120,7 +120,9 @@ class EntityController {
 		}
 	}
 
-	static protected function convertPartsStringToArray(string $partsAsString): array {
+	protected function getPartsFromRequest(ServerRequestInterface $request): array {
+		$params = $request->getQueryParams();
+		$partsAsString = $params['parts'] ?? '';
 		return array_fill_keys(array_filter(array_map('trim', explode(',', $partsAsString))), true);
 	}
 
