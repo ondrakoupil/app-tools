@@ -28,6 +28,7 @@ interface EntitySpec {
 	function beforeClone($id, array $data): array;
 	function afterClone($originalId, $newId, array $data): void;
 
-	function expandItem($id, array $data, $specs = null): array;
+	function expandItem($id, array $data, $context = null): array;
+	function expandManyItems(array $items, $context = null): array;
 
 }

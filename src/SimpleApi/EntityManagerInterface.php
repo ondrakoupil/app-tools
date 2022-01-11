@@ -4,7 +4,13 @@ namespace OndraKoupil\AppTools\SimpleApi;
 
 interface EntityManagerInterface {
 
-	function getAllItems(): array;
+	/**
+	 * @param mixed $context
+	 *
+	 * @return array
+	 */
+	function getAllItems($context = null): array;
+
 	function createItem(array $data): array;
 
 	/**
@@ -37,5 +43,14 @@ interface EntityManagerInterface {
 	 * @throws ItemNotFoundException
 	 */
 	function getItem(string $id, $context = null): array;
+
+	/**
+	 * @param string[] $ids
+	 * @param mixed $context
+	 *
+	 * @return array
+	 * @throws ItemNotFoundException
+	 */
+	function getManyItems(array $ids, $context = null): array;
 
 }

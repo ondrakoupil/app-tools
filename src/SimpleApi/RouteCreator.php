@@ -32,7 +32,9 @@ class RouteCreator {
 
 		$readGroup = $app->group($pathPrefix, function (RouteCollectorProxy $group) use ($app, $controllerClassNameOrToken) {
 
-			$group->get('', array($controllerClassNameOrToken, 'list'));
+			$group->get('/many/{idAsStringWithCommas:[0-9,]+}[/{partsAsString}]', array($controllerClassNameOrToken, 'viewMany'));
+			$group->get('/{id:[0-9]+}[/{partsAsString}]', array($controllerClassNameOrToken, 'view'));
+			$group->get('[/{partsAsString}]', array($controllerClassNameOrToken, 'list'));
 
 		});
 		if ($middlewareForReading) {
@@ -45,7 +47,6 @@ class RouteCreator {
 		$writeGroup = $app->group($pathPrefix, function (RouteCollectorProxy $group) use ($app, $controllerClassNameOrToken) {
 
 			$group->post('', array($controllerClassNameOrToken, 'create'));
-			$group->get('/{id:[0-9]+}', array($controllerClassNameOrToken, 'view'));
 			$group->patch('/{id:[0-9]+}', array($controllerClassNameOrToken, 'edit'));
 			$group->delete('/{id:[0-9]+}', array($controllerClassNameOrToken, 'delete'));
 			$group->delete('', array($controllerClassNameOrToken, 'deleteMany'));

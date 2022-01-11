@@ -8,6 +8,7 @@ use NotORM_Row;
 use OndraKoupil\AppTools\SimpleApi\Entity\DefaultEntity;
 use OndraKoupil\AppTools\SimpleApi\Entity\EntitySpec;
 use OndraKoupil\AppTools\SimpleApi\Entity\SlugField;
+use OndraKoupil\Tools\Arrays;
 use OndraKoupil\Tools\Strings;
 
 class DatabaseEntityManager implements EntityManagerInterface {
@@ -39,6 +40,7 @@ class DatabaseEntityManager implements EntityManagerInterface {
 	 *
 	 * @return NotORM_Row
 	 * @throws ItemNotFoundException
+	 * @throws InvalidArgumentException
 	 */
 	protected function getItemRow(string $id): NotORM_Row {
 		if (!$this->spec->isFormallyValidId($id)) {
@@ -52,14 +54,43 @@ class DatabaseEntityManager implements EntityManagerInterface {
 		return $item;
 	}
 
+	/**
+	 * @param string[] $ids
+	 *
+	 * @return NotORM_Row[]
+	 * @throws ItemNotFoundException
+	 * @throws InvalidArgumentException
+	 */
+	protected function getManyItemRows(array $ids): array {
+		foreach ($ids as $id) {
+			if (!$this->spec->isFormallyValidId($id)) {
+				throw new InvalidArgumentException('Invalid ID ' . $id);
+			}
+		}
+		$table = $this->tableName;
+		$items = $this->notORM->$table()->where('id', $ids)->fetchPairs('id');
+		foreach ($ids as $id) {
+			if (!isset($items[$id])) {
+				throw new ItemNotFoundException($id);
+			}
+		}
+		return $items;
+	}
+
 	function getItem(string $id, $context = null): array {
 		$basicData = iterator_to_array($this->getItemRow($id));
 		return $this->spec->expandItem($id, $basicData, $context);
 	}
 
-	function getAllItems(): array {
+	function getManyItems(array $ids, $context = null): array {
+		$allData = array_values(array_map('iterator_to_array', $this->getManyItemRows($ids)));
+		return $this->spec->expandManyItems($allData, $context);
+	}
+
+	function getAllItems($context = null): array {
 		$table = $this->tableName;
-		return array_values(array_map('iterator_to_array', iterator_to_array($this->notORM->$table())));
+		$items = array_values(array_map('iterator_to_array', iterator_to_array($this->notORM->$table())));
+		return $this->spec->expandManyItems($items, $context);
 	}
 
 	function createItem(array $data): array {
