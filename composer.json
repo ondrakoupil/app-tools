@@ -14,8 +14,8 @@
         "ext-zlib": "*",
         "psr/log": "^1.1",
 		"ext-mbstring": "*",
-		"ext-fileinfo": "For images transormations",
-        "ext-gd": "For images transormations"
+		"ext-fileinfo": "*",
+        "ext-gd": "*"
     },
     "suggest": {
         "psr/log": "Required for Logger",
