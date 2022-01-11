@@ -34,6 +34,13 @@ class FileManager {
 	}
 
 	/**
+	 * @return string
+	 */
+	public function getPathToFilesDirectory(): string {
+		return $this->pathToFilesDirectory;
+	}
+
+	/**
 	 * @param int $autoContextLevels
 	 */
 	public function setAutoContextLevels(int $autoContextLevels): void {
@@ -47,6 +54,12 @@ class FileManager {
 		$this->addedContext = Arrays::arrayize($addedContext);
 	}
 
+	/**
+	 * @param string $fileName
+	 * @param string|string[] $context
+	 *
+	 * @return string
+	 */
 	function getUrlOfFile(string $fileName, $context = array()): string {
 		$fileName = $this->generateSafeFileName($fileName);
 		return $this->mergePathParts(
@@ -58,6 +71,12 @@ class FileManager {
 		);
 	}
 
+	/**
+	 * @param string $fileName
+	 * @param string|string[] $context
+	 *
+	 * @return string
+	 */
 	function getPathOfFile(string $fileName, $context = array()): string {
 		$fileName = $this->generateSafeFileName($fileName);
 		return $this->mergePathParts(
@@ -69,6 +88,12 @@ class FileManager {
 		);
 	}
 
+	/**
+	 * @param string $fileName
+	 * @param string|string[] $context
+	 *
+	 * @return string
+	 */
 	protected function getDirectoryPath(string $fileName, $context = array()): string {
 		$fileName = $this->generateSafeFileName($fileName);
 		return $this->mergePathParts(
@@ -79,14 +104,42 @@ class FileManager {
 		);
 	}
 
+	/**
+	 * @param string $fileName
+	 * @param string|string[] $context
+	 *
+	 * @return bool
+	 */
 	function doesFileExist(string $fileName, $context = array()): bool {
 		return file_exists($this->getPathOfFile($fileName, $context));
 	}
 
+	/**
+	 * @param string $fileName
+	 * @param string|string[] $context
+	 *
+	 * @return int
+	 */
 	function getFileSize(string $fileName, $context = array()): int {
 		return @filesize($this->getPathOfFile($fileName, $context)) ?: 0;
 	}
 
+	/**
+	 * @param string $fileName
+	 * @param string|string[] $context
+	 *
+	 * @return int
+	 */
+	function getFileTime(string $fileName, $context = array()): int {
+		return @filemtime($this->getPathOfFile($fileName, $context)) ?: 0;
+	}
+
+	/**
+	 * @param string $filename
+	 * @param string|string[] $context
+	 *
+	 * @return void
+	 */
 	function deleteFile(string $filename, $context = array()): void {
 		$path = $this->getPathOfFile($filename, $context);
 		try {
@@ -98,6 +151,13 @@ class FileManager {
 		}
 	}
 
+	/**
+	 * @param string $oldFilename
+	 * @param string $newFilename
+	 * @param string|string[] $context
+	 *
+	 * @return void
+	 */
 	function renameFile(string $oldFilename, string $newFilename, $context = array()): void {
 		if ($oldFilename === $newFilename) {
 			return;
@@ -115,7 +175,15 @@ class FileManager {
 		}
 	}
 
-	function addFile(string $preferredFilename, string $content, $context = array(), $overwriteIfExists = false): string {
+	/**
+	 * @param string $preferredFilename
+	 * @param string $content
+	 * @param string|string[] $context
+	 * @param bool $overwriteIfExists
+	 *
+	 * @return string
+	 */
+	function addFile(string $preferredFilename, string $content, $context = array(), bool $overwriteIfExists = false): string {
 
 		if ($overwriteIfExists) {
 			if ($this->doesFileExist($preferredFilename, $context)) {
@@ -130,11 +198,25 @@ class FileManager {
 
 	}
 
+	/**
+	 * @param string $filename
+	 * @param string|string[] $context
+	 *
+	 * @return string
+	 */
 	function getFileContent(string $filename, $context = array()): string {
 		return file_get_contents($this->getPathOfFile($filename, $context));
 	}
 
-	function writeIntoFile(string $content, string $filename, $context = array(), $append = false): void {
+	/**
+	 * @param string $content
+	 * @param string $filename
+	 * @param string|string[] $context
+	 * @param bool $append
+	 *
+	 * @return void
+	 */
+	function writeIntoFile(string $content, string $filename, $context = array(), bool $append = false): void {
 		$filename = $this->generateSafeFileName($filename);
 		$path = $this->getPathOfFile($filename, $context);
 		if (!file_exists($path)) {
