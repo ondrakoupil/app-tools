@@ -37,8 +37,12 @@ class ExtractTokenMiddleware implements MiddlewareInterface {
 			$params[$token] ?? '',
 			$headers[$token] ?? '',
 			$headers['Authorization'] ?? '',
+			$headers['authorization'] ?? '',
 			$headers['X-Authorization'] ?? '',
+			$headers['x-authorization'] ?? '',
 			$headers['X-' . $token] ?? '',
+			$headers['x-' . $token] ?? '',
+			$headers['x-' . strtolower($token)] ?? '',
 		);
 
 		$tokenValue = '';
