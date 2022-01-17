@@ -6,7 +6,7 @@
         "ondrakoupil/tools": "^1.1",
         "ext-json": "*",
         "ext-pdo": "*",
-        "php": ">=7.4",
+        "php": ">=7.3",
 		"ext-curl": "*",
         "psr/http-message": "^1.0",
         "psr/http-server-handler": "^1.0",
@@ -27,7 +27,8 @@
     "require-dev": {
         "nette/tester": "^2.2",
         "slim/slim": "^4",
-        "vrana/notorm": "dev-master"
+        "vrana/notorm": "dev-master",
+        "rector/rector": "^0.12.13"
     },
     "license": "MIT",
     "authors": [

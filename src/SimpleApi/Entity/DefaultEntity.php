@@ -7,7 +7,7 @@ class DefaultEntity implements EntitySpec {
 	/**
 	 * @var SlugField[]
 	 */
-	protected array $slugFields = array();
+	protected $slugFields = array();
 
 	function addSlugField(SlugField $slugField): void {
 		$this->slugFields[$slugField->fieldName] = $slugField;

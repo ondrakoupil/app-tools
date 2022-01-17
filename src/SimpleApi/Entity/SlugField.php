@@ -4,14 +4,20 @@ namespace OndraKoupil\AppTools\SimpleApi\Entity;
 
 class SlugField {
 
-	public string $fieldName;
+	/**
+	 * @var string
+	 */
+	public $fieldName;
 
 	/**
 	 * @var string[]
 	 */
-	public array $basedOnFields;
+	public $basedOnFields;
 
-	public bool $syncAfterCreating;
+	/**
+	 * @var bool
+	 */
+	public $syncAfterCreating;
 
 	/**
 	 * @param string $fieldName

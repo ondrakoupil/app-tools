@@ -8,7 +8,10 @@ use Psr\Log\LoggerInterface;
 
 class FilePurgerWithPreresizedImages extends FilePurgerWithManager {
 
-	protected PreresizedImageFileManager $imageManager;
+	/**
+	 * @var PreresizedImageFileManager
+	 */
+	protected $imageManager;
 
 	public function __construct(PreresizedImageFileManager $imageFileManager, ActionInterface $action, LoggerInterface $logger = null) {
 		parent::__construct($imageFileManager->getFileManager(), $action, $logger);

@@ -53,4 +53,18 @@ interface EntityManagerInterface {
 	 */
 	function getManyItems(array $ids, $context = null): array;
 
+	/**
+)	 * @param string $id
+	 *
+	 * @return bool
+	 */
+	function exists(string $id): bool;
+
+	/**
+	 * @param string[] $ids
+	 *
+	 * @return bool
+	 */
+	function existsAllOf(array $ids): bool;
+
 }

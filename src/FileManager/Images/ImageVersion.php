@@ -6,14 +6,20 @@ use OndraKoupil\Tools\Arrays;
 
 class ImageVersion {
 
-	protected string $id;
+	/**
+	 * @var string
+	 */
+	protected $id;
 
 	/**
 	 * @var ImageTransformationInterface[]
 	 */
-	protected array $transformations;
+	protected $transformations;
 
-	protected int $quality;
+	/**
+	 * @var int
+	 */
+	protected $quality;
 
 	/**
 	 * @param string $id

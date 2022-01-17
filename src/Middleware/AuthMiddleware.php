@@ -142,7 +142,7 @@ class AuthMiddleware implements MiddlewareInterface {
 			$jsonPos = strpos($accepted, 'application/json');
 			$textPos = strpos($accepted, 'text/');
 			if ($jsonPos !== false and ($textPos === false or $textPos > $jsonPos)) {
-				$response->getBody()->write(json_encode(array('error' => $message, 'errorCode' => $authFailCode ? ValidationResult::AUTH_FAIL_CODES[$authFailCode] : '')));
+				$response->getBody()->write(json_encode(array('error' => $message, 'errorCode' => $authFailCode ? ValidationResult::AUTH_FAIL_CODES[$authFailCode] : ''), JSON_THROW_ON_ERROR));
 				$response = $response->withHeader('Content-Type', 'application/json');
 			} else {
 				$response->getBody()->write($message);

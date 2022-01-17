@@ -13,14 +13,20 @@ class PreresizedImageFileManager {
 
 	const ORIGINAL = 'original';
 
-	protected FileManager $fileManager;
+	/**
+	 * @var FileManager
+	 */
+	protected $fileManager;
 
 	/**
 	 * @var ImageVersion[]
 	 */
-	protected array $versions = array();
+	protected $versions = array();
 
-	protected string $originalFileContext = '';
+	/**
+	 * @var string
+	 */
+	protected $originalFileContext = '';
 
 	/**
 	 * @param FileManager $fileManager

@@ -12,11 +12,20 @@ class ImageUploadController {
 	const CONTENT = 'content';
 	const NAME = 'name';
 
-	protected PreresizedImageFileManager $imageManager;
+	/**
+	 * @var PreresizedImageFileManager
+	 */
+	protected $imageManager;
 
-	protected string $contentFieldName;
+	/**
+	 * @var string
+	 */
+	protected $contentFieldName;
 
-	protected string $filenameFieldName;
+	/**
+	 * @var string
+	 */
+	protected $filenameFieldName;
 
 
 	function __construct(
@@ -53,7 +62,7 @@ class ImageUploadController {
 
 		if (!$content or !$name) {
 			$r = $response->withStatus(400)->withHeader('Content-Type', 'application/json');
-			$r->getBody()->write(json_encode(array('error' => 'Missing fields: ' . $this->filenameFieldName . ' or ' . $this->contentFieldName)));
+			$r->getBody()->write(json_encode(array('error' => 'Missing fields: ' . $this->filenameFieldName . ' or ' . $this->contentFieldName), JSON_THROW_ON_ERROR));
 			return $r;
 		}
 
@@ -72,7 +81,7 @@ class ImageUploadController {
 		$resultUrls = $this->imageManager->getImageAllUrls($resultingName);
 
 		$r = $response->withStatus(200)->withHeader('Content-Type', 'application/json');
-		$r->getBody()->write(json_encode(array('filename' => $resultingName, 'urls' => $resultUrls)));
+		$r->getBody()->write(json_encode(array('filename' => $resultingName, 'urls' => $resultUrls), JSON_THROW_ON_ERROR));
 		return $r;
 
 	}

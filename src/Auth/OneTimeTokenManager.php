@@ -21,12 +21,12 @@ class OneTimeTokenManager {
 			'data' => $data
 		);
 
-		$dataString = json_encode($dataPayload);
+		$dataString = json_encode($dataPayload, JSON_THROW_ON_ERROR);
 
 		$hash = $this->hash($dataString);
 		$dataPayloadWithHash = $dataPayload + array('hash' => $hash);
 
-		return base64_encode(json_encode($dataPayloadWithHash));
+		return base64_encode(json_encode($dataPayloadWithHash, JSON_THROW_ON_ERROR));
 
 	}
 
@@ -37,7 +37,7 @@ class OneTimeTokenManager {
 	 */
 	function validate($inputString) {
 
-		$decoded = json_decode(base64_decode($inputString), true);
+		$decoded = json_decode(base64_decode($inputString), true, 512, JSON_THROW_ON_ERROR);
 		if (!$decoded) {
 			return new OneTimeTokenValidationResult(false);
 		}
@@ -54,7 +54,7 @@ class OneTimeTokenManager {
 			'until' => $decoded['until'],
 			'data' => $decoded['data'],
 		);
-		$dataString = json_encode($dataPayload);
+		$dataString = json_encode($dataPayload, JSON_THROW_ON_ERROR);
 		$receivedHash = $decoded['hash'];
 
 		try {

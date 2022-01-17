@@ -9,7 +9,7 @@ class ReaderIterator implements Iterator {
 	/**
 	 * @var ReaderInterface
 	 */
-	protected ReaderInterface $reader;
+	protected $reader;
 
 	/**
 	 * @var mixed

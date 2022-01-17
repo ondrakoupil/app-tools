@@ -11,16 +11,25 @@ class FileUploadController {
 	const CONTENT = 'content';
 	const NAME = 'name';
 
-	protected FileManager $fileManager;
+	/**
+	 * @var FileManager
+	 */
+	protected $fileManager;
 
-	private string $contentFieldName;
+	/**
+	 * @var string
+	 */
+	private $contentFieldName;
 
-	private string $filenameFieldName;
+	/**
+	 * @var string
+	 */
+	private $filenameFieldName;
 
 	/**
 	 * @var string[]
 	 */
-	protected array $context;
+	protected $context;
 
 
 	/**
@@ -57,7 +66,7 @@ class FileUploadController {
 
 		if (!$content or !$name) {
 			$r = $response->withStatus(400)->withHeader('Content-Type', 'application/json');
-			$r->getBody()->write(json_encode(array('error' => 'Missing fields: ' . $this->filenameFieldName . ' or ' . $this->contentFieldName)));
+			$r->getBody()->write(json_encode(array('error' => 'Missing fields: ' . $this->filenameFieldName . ' or ' . $this->contentFieldName), JSON_THROW_ON_ERROR));
 			return $r;
 		}
 
@@ -65,7 +74,7 @@ class FileUploadController {
 		$url = $this->fileManager->getUrlOfFile($resultingName, $this->context);
 
 		$r = $response->withStatus(200)->withHeader('Content-Type', 'application/json');
-		$r->getBody()->write(json_encode(array('filename' => $resultingName, 'url' => $url)));
+		$r->getBody()->write(json_encode(array('filename' => $resultingName, 'url' => $url), JSON_THROW_ON_ERROR));
 		return $r;
 
 	}

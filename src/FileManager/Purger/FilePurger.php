@@ -16,7 +16,10 @@ use SplFileInfo;
  */
 class FilePurger {
 
-	protected string $directory;
+	/**
+	 * @var string
+	 */
+	protected $directory;
 
 	/**
 	 * @var callable
@@ -26,18 +29,27 @@ class FilePurger {
 	/**
 	 * @var string[]
 	 */
-	protected array $exceptionFilePaths = array();
+	protected $exceptionFilePaths = array();
 
 	/**
 	 * @var string[]
 	 */
-	protected array $exceptionFileNames = array();
+	protected $exceptionFileNames = array();
 
-	protected ?LoggerInterface $logger;
+	/**
+	 * @var LoggerInterface|null
+	 */
+	protected $logger;
 
-	protected int $minAgeInHours = 0;
+	/**
+	 * @var int
+	 */
+	protected $minAgeInHours = 0;
 
-	protected ActionInterface $action;
+	/**
+	 * @var ActionInterface
+	 */
+	protected $action;
 
 	/**
 	 * ${CARET}

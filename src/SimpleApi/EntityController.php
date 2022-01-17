@@ -13,7 +13,7 @@ class EntityController {
 	/**
 	 * @var EntityManagerInterface
 	 */
-	private $manager;
+	protected $manager;
 
 	function __construct(
 		EntityManagerInterface $manager
@@ -28,13 +28,13 @@ class EntityController {
 
 	function respondWithJson(ResponseInterface $response, $data): ResponseInterface {
 		$r = $response->withStatus(200)->withHeader('Content-Type', 'application/json');
-		$r->getBody()->write(json_encode($data));
+		$r->getBody()->write(json_encode($data, JSON_THROW_ON_ERROR));
 		return $r;
 	}
 
 	function respondWithError(ResponseInterface $response, int $status, string $errorDesc): ResponseInterface {
 		$r = $response->withStatus($status)->withHeader('Content-Type', 'application/json');
-		$r->getBody()->write(json_encode(array('error' => $errorDesc)));
+		$r->getBody()->write(json_encode(array('error' => $errorDesc), JSON_THROW_ON_ERROR));
 		return $r;
 	}
 

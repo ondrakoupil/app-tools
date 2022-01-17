@@ -10,13 +10,25 @@ use OndraKoupil\Tools\Files;
  */
 class ArchiveAction implements ActionInterface {
 
-	protected string $archiveDirectory;
+	/**
+	 * @var string
+	 */
+	protected $archiveDirectory;
 
-	protected int $trashAfterDays;
+	/**
+	 * @var int
+	 */
+	protected $trashAfterDays;
 
-	protected string $hash;
+	/**
+	 * @var string
+	 */
+	protected $hash;
 
-	protected ?ActionInterface $actionAfterTrash;
+	/**
+	 * @var ActionInterface|null
+	 */
+	protected $actionAfterTrash;
 
 	function __construct(string $archiveDirectory, int $trashAfterDays = 0, ActionInterface $actionAfterTrash = null) {
 		$this->archiveDirectory = $archiveDirectory;

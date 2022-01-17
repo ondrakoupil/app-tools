@@ -11,7 +11,10 @@ class ReaderWithCallback {
 	 */
 	protected $callback;
 
-	private ReaderInterface $reader;
+	/**
+	 * @var ReaderInterface
+	 */
+	private $reader;
 
 	/**
 	 * @param ReaderInterface $reader

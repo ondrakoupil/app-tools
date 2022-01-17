@@ -10,15 +10,30 @@ use Psr\Log\LoggerInterface;
 
 class FileManager {
 
-	protected string $pathToFilesDirectory;
+	/**
+	 * @var string
+	 */
+	protected $pathToFilesDirectory;
 
-	protected string $baseUrlOfFileDirectory;
+	/**
+	 * @var string
+	 */
+	protected $baseUrlOfFileDirectory;
 
-	protected int $autoContextLevels;
+	/**
+	 * @var int
+	 */
+	protected $autoContextLevels;
 
-	protected array $addedContext;
+	/**
+	 * @var mixed[]
+	 */
+	protected $addedContext;
 
-	protected ?LoggerInterface $logger;
+	/**
+	 * @var LoggerInterface|null
+	 */
+	protected $logger;
 
 	/**
 	 *

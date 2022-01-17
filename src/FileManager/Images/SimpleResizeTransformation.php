@@ -12,11 +12,20 @@ class SimpleResizeTransformation implements ImageTransformationInterface {
 	const CROP = 'crop';
 	const STRETCH = 'stretch';
 
-	protected int $width;
+	/**
+	 * @var int
+	 */
+	protected $width;
 
-	protected int $height;
+	/**
+	 * @var int
+	 */
+	protected $height;
 
-	protected string $mode;
+	/**
+	 * @var string
+	 */
+	protected $mode;
 
 	function __construct(int $width, int $height, string $mode = self::CONTAIN) {
 		$this->width = $width;

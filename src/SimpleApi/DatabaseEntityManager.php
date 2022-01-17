@@ -13,11 +13,20 @@ use OndraKoupil\Tools\Strings;
 
 class DatabaseEntityManager implements EntityManagerInterface {
 
-	protected NotORM $notORM;
+	/**
+	 * @var NotORM
+	 */
+	protected $notORM;
 
-	protected string $tableName;
+	/**
+	 * @var string
+	 */
+	protected $tableName;
 
-	protected EntitySpec $spec;
+	/**
+	 * @var EntitySpec
+	 */
+	protected $spec;
 
 	function __construct(
 		NotORM     $notORM,
@@ -91,6 +100,24 @@ class DatabaseEntityManager implements EntityManagerInterface {
 		$table = $this->tableName;
 		$items = array_values(array_map('iterator_to_array', iterator_to_array($this->notORM->$table())));
 		return $this->spec->expandManyItems($items, $context);
+	}
+
+	function exists(string $id): bool {
+		try {
+			$this->getItemRow($id);
+			return true;
+		} catch (ItemNotFoundException $e) {
+			return false;
+		}
+	}
+
+	function existsAllOf(array $ids): bool {
+		try {
+			$this->getManyItemRows($ids);
+			return true;
+		} catch (ItemNotFoundException $e) {
+			return false;
+		}
 	}
 
 	function createItem(array $data): array {
@@ -170,7 +197,7 @@ class DatabaseEntityManager implements EntityManagerInterface {
 		$original['id'] = null;
 		$this->clearSlugFields($original);
 		$original = $this->processSlugFields($original);
-		$this->spec->beforeClone($id, $original);
+		$original = $this->spec->beforeClone($id, $original);
 		$created = iterator_to_array($this->notORM->$table()->insert($original));
 		$this->spec->afterClone($id, $created['id'], $created);
 		return $created;

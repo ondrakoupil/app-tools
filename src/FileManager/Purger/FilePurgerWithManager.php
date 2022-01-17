@@ -7,7 +7,10 @@ use Psr\Log\LoggerInterface;
 
 class FilePurgerWithManager extends FilePurger {
 
-	private FileManager $manager;
+	/**
+	 * @var FileManager
+	 */
+	private $manager;
 
 	/**
 	 * @param FileManager $manager

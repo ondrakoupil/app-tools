@@ -62,9 +62,9 @@ class GridPresetsController {
 			$data[] = array(
 				'id'      => $row['id'],
 				'name'    => $row['name'],
-				'filters' => $row['filters'] ? json_decode($row['filters'], true) : null,
-				'columns' => $row['columns'] ? json_decode($row['columns'], true) : null,
-				'sort'    => $row['sort'] ? json_decode($row['sort'], true) : null,
+				'filters' => $row['filters'] ? json_decode($row['filters'], true, 512, JSON_THROW_ON_ERROR) : null,
+				'columns' => $row['columns'] ? json_decode($row['columns'], true, 512, JSON_THROW_ON_ERROR) : null,
+				'sort'    => $row['sort'] ? json_decode($row['sort'], true, 512, JSON_THROW_ON_ERROR) : null,
 			);
 		}
 
@@ -81,19 +81,19 @@ class GridPresetsController {
 		if (!$filters) {
 			$filters = null;
 		} else {
-			$filters = json_encode($filters);
+			$filters = json_encode($filters, JSON_THROW_ON_ERROR);
 		}
 
 		if (!$sort) {
 			$sort = null;
 		} else {
-			$sort = json_encode($sort);
+			$sort = json_encode($sort, JSON_THROW_ON_ERROR);
 		}
 
 		if (!$columns) {
 			$columns = null;
 		} else {
-			$columns = json_encode($columns);
+			$columns = json_encode($columns, JSON_THROW_ON_ERROR);
 		}
 
 		$saved = $this->pdo->prepare(
@@ -168,19 +168,19 @@ class GridPresetsController {
 		if (!$filters) {
 			$filters = null;
 		} else {
-			$filters = json_encode($filters);
+			$filters = json_encode($filters, JSON_THROW_ON_ERROR);
 		}
 
 		if (!$sort) {
 			$sort = null;
 		} else {
-			$sort = json_encode($sort);
+			$sort = json_encode($sort, JSON_THROW_ON_ERROR);
 		}
 
 		if (!$columns) {
 			$columns = null;
 		} else {
-			$columns = json_encode($columns);
+			$columns = json_encode($columns, JSON_THROW_ON_ERROR);
 		}
 
 		$saved = $this->pdo->prepare(
@@ -212,9 +212,9 @@ class GridPresetsController {
 		$data = array(
 			'id'      => $preset['id'],
 			'name'    => $preset['name'],
-			'filters' => $preset['filters'] ? json_decode($preset['filters'], true) : null,
-			'columns' => $preset['columns'] ? json_decode($preset['columns'], true) : null,
-			'sort'    => $preset['sort'] ? json_decode($preset['sort'], true) : null,
+			'filters' => $preset['filters'] ? json_decode($preset['filters'], true, 512, JSON_THROW_ON_ERROR) : null,
+			'columns' => $preset['columns'] ? json_decode($preset['columns'], true, 512, JSON_THROW_ON_ERROR) : null,
+			'sort'    => $preset['sort'] ? json_decode($preset['sort'], true, 512, JSON_THROW_ON_ERROR) : null,
 		);
 
 		return $response->withJson($data);
