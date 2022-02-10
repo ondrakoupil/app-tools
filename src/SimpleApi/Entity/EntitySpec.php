@@ -2,6 +2,9 @@
 
 namespace OndraKoupil\AppTools\SimpleApi\Entity;
 
+use NotORM;
+use NotORM_Result;
+
 interface EntitySpec {
 
 	/**
@@ -30,5 +33,8 @@ interface EntitySpec {
 
 	function expandItem($id, array $data, $context = null): array;
 	function expandManyItems(array $items, $context = null): array;
+	
+	function getAllItemsRequest(NotORM_Result $request): NotORM_Result;
+	function getAllItemsFilter(array $items): array;
 
 }

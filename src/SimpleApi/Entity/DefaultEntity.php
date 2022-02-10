@@ -2,6 +2,10 @@
 
 namespace OndraKoupil\AppTools\SimpleApi\Entity;
 
+use Exception;
+use NotORM;
+use NotORM_Result;
+
 class DefaultEntity implements EntitySpec {
 
 	/**
@@ -61,6 +65,14 @@ class DefaultEntity implements EntitySpec {
 		return array_map(function($item) use ($context) {
 			return $this->expandItem($item['id'], $item, $context);
 		}, $items);
+	}
+
+	function getAllItemsRequest(NotORM_Result $request): NotORM_Result {
+		return $request;
+	}
+
+	function getAllItemsFilter(array $items): array {
+		return $items;
 	}
 
 
