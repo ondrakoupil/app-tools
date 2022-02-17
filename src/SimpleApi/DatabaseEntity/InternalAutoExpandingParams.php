@@ -27,6 +27,14 @@ class InternalAutoExpandingParams {
 	 */
 	public $field;
 
+	public $countContextKey;
+
+	public $countField;
+
+	public $idsContextKey;
+
+	public $idsField;
+
 	/**
 	 * ${CARET}
 	 *
@@ -40,6 +48,16 @@ class InternalAutoExpandingParams {
 		$this->entityId = $entityId;
 		$this->expandContext = $expandContext;
 		$this->field = $field ?: $contextKey;
+	}
+
+	public function setupCountParams($contextKey, $field = '') {
+		$this->countContextKey = $contextKey;
+		$this->countField = $field?: ($this->field . 'Count');
+	}
+
+	public function setupIdsParams($contextKey, $field = '') {
+		$this->idsContextKey = $contextKey;
+		$this->idsField = $field?: ($this->field . 'Ids');
 	}
 
 

@@ -11,9 +11,12 @@ use OndraKoupil\AppTools\SimpleApi\Entity\EntitySpec;
 use OndraKoupil\AppTools\SimpleApi\EntityManagerInterface;
 use OndraKoupil\AppTools\SimpleApi\ItemNotFoundException;
 use OndraKoupil\AppTools\SimpleApi\Relations\AutoExpandingParentManagerInterface;
+use OndraKoupil\AppTools\SimpleApi\Relations\AutoExpandingRelatedItemsManagerInterface;
 use OndraKoupil\AppTools\SimpleApi\Relations\AutoExpandingSubItemsManagerInterface;
+use OndraKoupil\AppTools\SimpleApi\Relations\EntityWithMultiRelationManagerInterface;
 use OndraKoupil\AppTools\SimpleApi\Relations\EntityWithParentItemManagerInterface;
 use OndraKoupil\AppTools\SimpleApi\Relations\EntityWithSubItemsManagerInterface;
+use OndraKoupil\AppTools\SimpleApi\Relations\MultiRelationManager;
 use OndraKoupil\AppTools\SimpleApi\Relations\SubItemsManager;
 use OndraKoupil\Tools\Arrays;
 use OndraKoupil\Tools\Strings;
@@ -23,8 +26,10 @@ class DatabaseEntityManager
 		EntityManagerInterface,
 		EntityWithSubItemsManagerInterface,
 		EntityWithParentItemManagerInterface,
+		EntityWithMultiRelationManagerInterface,
 		AutoExpandingSubItemsManagerInterface,
-		AutoExpandingParentManagerInterface
+		AutoExpandingParentManagerInterface,
+		AutoExpandingRelatedItemsManagerInterface
 {
 
 	/**
@@ -66,6 +71,19 @@ class DatabaseEntityManager
 	 */
 	protected $autoExpandParentItems = array();
 
+	/**
+	 * @var InternalMultiRelationParams[]  Indexed by entity ID
+	 */
+	protected $relatedItemManagers = array();
+
+	protected $defaultRelatedItemEntityId = 'default-not-set';
+
+	/**
+	 * @var InternalAutoExpandingParams[] Indexed by context key
+	 */
+	protected $autoExpandRelatedItems = array();
+
+
 
 	function __construct(
 		NotORM     $notORM,
@@ -97,17 +115,24 @@ class DatabaseEntityManager
 		}
 	}
 
-	function setupAutoExpandSubItems($contextKey, $childEntityId = '', $childItemExpandContext = array(), $itemFieldToExpandSubitems = '') {
+	function setupAutoExpandSubItems(
+		$contextKey,
+		$childEntityId = '',
+		$childItemExpandContext = array(),
+		$itemFieldToExpandSubitems = ''
+	) {
 		if (!$childEntityId) {
 			$childEntityId = $this->defaultChildItemEntityId;
 		}
 		if (!$this->childItemManagers[$childEntityId]) {
 			throw new InvalidArgumentException('SubItem relationship with entity ' . $childEntityId . ' is not defined. Call defineSubItemsRelation() first.');
 		}
-		if ($this->autoExpandChildItems[$contextKey] ?? null or $this->autoExpandParentItems[$contextKey] ?? null) {
+		if ($this->autoExpandRelatedItems[$contextKey] ?? null or $this->autoExpandParentItems[$contextKey] ?? null or $this->autoExpandChildItems[$contextKey] ?? null) {
 			throw new InvalidArgumentException('AutoExpanding context key ' . $contextKey . ' is already set up.');
 		}
 		$this->autoExpandChildItems[$contextKey] = new InternalAutoExpandingParams($contextKey, $childEntityId, $childItemExpandContext, $itemFieldToExpandSubitems);
+		$this->autoExpandChildItems[$contextKey]->setupCountParams($contextKey . 'Count');
+		$this->autoExpandChildItems[$contextKey]->setupIdsParams($contextKey . 'Ids');
 	}
 
 	function defineParentEntityRelation(SubItemsManager $relationManager, string $parentEntityId,  $parentEntityManagerOrGetter, bool $asDefault = true) {
@@ -125,19 +150,60 @@ class DatabaseEntityManager
 		}
 	}
 
-	function setupAutoExpandParent(string $contextKey, string $parentEntityId = '', $parentItemExpandContext = array(), $itemFieldToExpandParent = '') {
+	function setupAutoExpandParent(
+		string $contextKey,
+		string $parentEntityId = '',
+		$parentItemExpandContext = array(),
+		$itemFieldToExpandParent = ''
+	) {
 		if (!$parentEntityId) {
 			$parentEntityId = $this->defaultParentItemEntityId;
 		}
 		if (!$this->parentItemManagers[$parentEntityId]) {
 			throw new InvalidArgumentException('Parent item relationship with entity ' . $parentEntityId . ' is not defined. Call defineParentEntityRelation() first.');
 		}
-		if ($this->autoExpandChildItems[$contextKey] ?? null or $this->autoExpandParentItems[$contextKey] ?? null) {
+		if ($this->autoExpandRelatedItems[$contextKey] ?? null or $this->autoExpandParentItems[$contextKey] ?? null or $this->autoExpandChildItems[$contextKey] ?? null) {
 			throw new InvalidArgumentException('AutoExpanding context key ' . $contextKey . ' is already set up.');
 		}
 		$this->autoExpandParentItems[$contextKey] = new InternalAutoExpandingParams($contextKey, $parentEntityId, $parentItemExpandContext, $itemFieldToExpandParent);
-
 	}
+
+
+	function defineEntityWithMultiRelation(MultiRelationManager $relationManager, string $otherEntityId, $otherEntityManagerOrGetter, bool $asDefault = true) {
+		if (isset($this->relatedItemManagers[$otherEntityId])) {
+			throw new Exception('Relation for related multi entity ' . $otherEntityId . ' is already defined!');
+		}
+		$this->relatedItemManagers[$otherEntityId] = new InternalMultiRelationParams(
+			$otherEntityId,
+			$relationManager,
+			$otherEntityManagerOrGetter
+		);
+
+		if ($asDefault) {
+			$this->defaultRelatedItemEntityId = $otherEntityId;
+		}
+	}
+
+	function setupAutoExpandRelatedItems(
+		string $contextKey,
+		string $otherEntityId = '',
+		       $relatedItemExpandContext = array(),
+		string $itemFieldToExpandRelatedItems = ''
+	) {
+		if (!$otherEntityId) {
+			$otherEntityId = $this->defaultRelatedItemEntityId;
+		}
+		if (!$this->relatedItemManagers[$otherEntityId]) {
+			throw new InvalidArgumentException('Related item relationship with entity ' . $otherEntityId . ' is not defined. Call defineEntityWithMultiRelation() first.');
+		}
+		if ($this->autoExpandRelatedItems[$contextKey] ?? null or $this->autoExpandParentItems[$contextKey] ?? null or $this->autoExpandChildItems[$contextKey] ?? null) {
+			throw new InvalidArgumentException('AutoExpanding context key ' . $contextKey . ' is already set up.');
+		}
+		$this->autoExpandRelatedItems[$contextKey] = new InternalAutoExpandingParams($contextKey, $otherEntityId, $relatedItemExpandContext, $itemFieldToExpandRelatedItems);
+		$this->autoExpandRelatedItems[$contextKey]->setupCountParams($contextKey . 'Count');
+		$this->autoExpandRelatedItems[$contextKey]->setupIdsParams($contextKey . 'Ids');
+	}
+
 
 	/**
 	 * @param string $id
@@ -188,10 +254,35 @@ class DatabaseEntityManager
 				if ($context[$contextKey] ?? false) {
 					$expandedFromSpec[$autoExpandData->field] = $this->getSubItemsByIdExpanded($id, $autoExpandData->expandContext, $autoExpandData->entityId);
 				}
+				if ($autoExpandData->countContextKey) {
+					if ($context[$autoExpandData->countContextKey] ?? false) {
+						$expandedFromSpec[$autoExpandData->countField] = count($this->getSubItemsById($id, $autoExpandData->entityId));
+					}
+				}
+				if ($autoExpandData->idsContextKey) {
+					if ($context[$autoExpandData->idsContextKey] ?? false) {
+						$expandedFromSpec[$autoExpandData->idsField] = $this->getSubItemsById($id, $autoExpandData->entityId);
+					}
+				}
 			}
 			foreach ($this->autoExpandParentItems as $contextKey => $autoExpandData) {
 				if ($context[$contextKey] ?? false) {
 					$expandedFromSpec[$autoExpandData->field] = $this->getParentByIdExpanded($id, $autoExpandData->expandContext, $autoExpandData->entityId);
+				}
+			}
+			foreach ($this->autoExpandRelatedItems as $contextKey => $autoExpandData) {
+				if ($context[$contextKey] ?? false) {
+					$expandedFromSpec[$autoExpandData->field] = $this->getRelatedItemsByIdExpanded($id, $autoExpandData->expandContext, $autoExpandData->entityId);
+				}
+				if ($autoExpandData->countContextKey) {
+					if ($context[$autoExpandData->countContextKey] ?? false) {
+						$expandedFromSpec[$autoExpandData->countField] = count($this->getRelatedItemsById($id, $autoExpandData->entityId));
+					}
+				}
+				if ($autoExpandData->idsContextKey) {
+					if ($context[$autoExpandData->idsContextKey] ?? false) {
+						$expandedFromSpec[$autoExpandData->idsField] = $this->getRelatedItemsById($id, $autoExpandData->entityId);
+					}
 				}
 			}
 		}
@@ -209,6 +300,24 @@ class DatabaseEntityManager
 						$expandedFromSpec[$index][$autoExpandData->field] = $subItems[$item['id']] ?? array();
 					}
 				}
+				if ($autoExpandData->countContextKey) {
+					if ($context[$autoExpandData->countContextKey] ?? false) {
+						$ids = Arrays::valuePicker($items, 'id');
+						$allSubItemsItemsCount = $this->getManySubItemsById($ids, $autoExpandData->entityId);
+						foreach ($expandedFromSpec as $index => $item) {
+							$expandedFromSpec[$index][$autoExpandData->countField] = (($allSubItemsItemsCount[$item['id']] ?? false) ? count($allSubItemsItemsCount[$item['id']]) : 0);
+						}
+					}
+				}
+				if ($autoExpandData->idsContextKey) {
+					if ($context[$autoExpandData->idsContextKey] ?? false) {
+						$ids = Arrays::valuePicker($items, 'id');
+						$allSubItemsItemIds = $this->getManySubItemsById($ids, $autoExpandData->entityId);
+						foreach ($expandedFromSpec as $index => $item) {
+							$expandedFromSpec[$index][$autoExpandData->idsField] = (($allSubItemsItemIds[$item['id']] ?? false) ? $allSubItemsItemIds[$item['id']] : array());
+						}
+					}
+				}
 			}
 			foreach ($this->autoExpandParentItems as $contextKey => $autoExpandData) {
 				if ($context[$contextKey] ?? false) {
@@ -216,6 +325,33 @@ class DatabaseEntityManager
 					$subItems = $this->getManyParentsByIdExpanded($ids, $autoExpandData->expandContext, $autoExpandData->entityId);
 					foreach ($expandedFromSpec as $index => $item) {
 						$expandedFromSpec[$index][$autoExpandData->field] = $subItems[$item['id']] ?? array();
+					}
+				}
+			}
+			foreach ($this->autoExpandRelatedItems as $contextKey => $autoExpandData) {
+				if ($context[$contextKey] ?? false) {
+					$ids = Arrays::valuePicker($items, 'id');
+					$allRelatedItems = $this->getManyRelatedItemsByIdExpanded($ids, $autoExpandData->expandContext, $autoExpandData->entityId);
+					foreach ($expandedFromSpec as $index => $item) {
+						$expandedFromSpec[$index][$autoExpandData->field] = $allRelatedItems[$item['id']] ?? array();
+					}
+				}
+				if ($autoExpandData->countContextKey) {
+					if ($context[$autoExpandData->countContextKey] ?? false) {
+						$ids = Arrays::valuePicker($items, 'id');
+						$allRelatedItemsCount = $this->getManyRelatedItemsById($ids, $autoExpandData->entityId);
+						foreach ($expandedFromSpec as $index => $item) {
+							$expandedFromSpec[$index][$autoExpandData->countField] = (($allRelatedItemsCount[$item['id']] ?? false) ? count($allRelatedItemsCount[$item['id']]) : 0);
+						}
+					}
+				}
+				if ($autoExpandData->idsContextKey) {
+					if ($context[$autoExpandData->idsContextKey] ?? false) {
+						$ids = Arrays::valuePicker($items, 'id');
+						$allRelatedItemsItemIds = $this->getManyRelatedItemsById($ids, $autoExpandData->entityId);
+						foreach ($expandedFromSpec as $index => $item) {
+							$expandedFromSpec[$index][$autoExpandData->idsField] = (($allRelatedItemsItemIds[$item['id']] ?? false) ? $allRelatedItemsItemIds[$item['id']] : array());
+						}
 					}
 				}
 			}
@@ -645,7 +781,74 @@ class DatabaseEntityManager
 		$this->getParentItemRelationManagerById($parentEntityId)->preloadAllChildren();
 	}
 
+	// Multi-relations items
 
+	protected function getRelatedItemsRelationManagerById($otherEntityId = ''): MultiRelationManager {
+		if (!$otherEntityId) {
+			$otherEntityId = $this->defaultRelatedItemEntityId;
+		}
+		if (!isset($this->relatedItemManagers[$otherEntityId])) {
+			throw new Exception('Relation for entity ' . $otherEntityId . ' is not defined.');
+		}
+		return $this->relatedItemManagers[$otherEntityId]->relationManager;
+	}
+
+	protected function getRelatedItemEntityManagerById($otherEntityId = ''): EntityManagerInterface {
+		if (!$otherEntityId) {
+			$otherEntityId = $this->defaultRelatedItemEntityId;
+		}
+		if (!isset($this->relatedItemManagers[$otherEntityId])) {
+			throw new Exception('Relation for entity ' . $otherEntityId . ' is not defined.');
+		}
+		return $this->relatedItemManagers[$otherEntityId]->getEntityManager();
+	}
+
+	function getRelatedItemsById(string $id, string $otherEntityId = ''): array {
+		return $this->getRelatedItemsRelationManagerById($otherEntityId)->get($id);
+	}
+
+	function getRelatedItemsByIdExpanded(string $id, $expandParts = null, string $otherEntityId = ''): array {
+		$ids = $this->getRelatedItemsById($id, $otherEntityId);
+		$entityManager = $this->getRelatedItemEntityManagerById($otherEntityId);
+		return $entityManager->getManyItems($ids, $expandParts);
+	}
+
+	function getManyRelatedItemsById(array $ids, string $otherEntityId = ''): array {
+		return $this->getRelatedItemsRelationManagerById($otherEntityId)->getMany($ids);
+	}
+
+	function getManyRelatedItemsByIdExpanded(array $ids, $expandParts = null, string $otherEntityId = ''): array {
+		$relatedItemsAsIds = $this->getManyRelatedItemsById($ids, $otherEntityId);
+		$entityManager = $this->getRelatedItemEntityManagerById($otherEntityId);
+		$idsOfAllRequiredItemsInverted = array();
+		foreach ($relatedItemsAsIds as $relatedItemsIds) {
+			if ($relatedItemsIds) {
+				foreach ($relatedItemsIds as $relatedItemsId) {
+					$idsOfAllRequiredItemsInverted[$relatedItemsId] = true;
+				}
+			}
+		}
+		$idsOfAllRequiredItems = array_keys($idsOfAllRequiredItemsInverted);
+		$allRequiredItems = $entityManager->getManyItems($idsOfAllRequiredItems, $expandParts);
+		$allRequiredItemsById = array();
+		foreach ($allRequiredItems as $item) {
+			$allRequiredItemsById[$item['id']] = $item;
+		}
+
+		$returned = array();
+		foreach ($relatedItemsAsIds as $thisId => $otherIds) {
+			$returned[$thisId] = array_map(function($id) use ($allRequiredItemsById) { return $allRequiredItemsById[$id]; }, $otherIds);
+		}
+		return $returned;
+	}
+
+	function preloadManyRelatedItems(array $ids, string $otherEntityId = ''): void {
+		$this->getRelatedItemsRelationManagerById($otherEntityId)->preloadMany($ids);
+	}
+
+	function preloadAllRelatedItems(string $otherEntityId = ''): void {
+		$this->getRelatedItemsRelationManagerById($otherEntityId)->preloadAll();
+	}
 
 
 }
