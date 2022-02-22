@@ -13,9 +13,11 @@ use OndraKoupil\AppTools\SimpleApi\ItemNotFoundException;
 use OndraKoupil\AppTools\SimpleApi\Relations\AutoExpandingParentManagerInterface;
 use OndraKoupil\AppTools\SimpleApi\Relations\AutoExpandingRelatedItemsManagerInterface;
 use OndraKoupil\AppTools\SimpleApi\Relations\AutoExpandingSubItemsManagerInterface;
+use OndraKoupil\AppTools\SimpleApi\Relations\EditableRelatedItemsManagerInterface;
 use OndraKoupil\AppTools\SimpleApi\Relations\EntityWithMultiRelationManagerInterface;
 use OndraKoupil\AppTools\SimpleApi\Relations\EntityWithParentItemManagerInterface;
 use OndraKoupil\AppTools\SimpleApi\Relations\EntityWithSubItemsManagerInterface;
+use OndraKoupil\AppTools\SimpleApi\Relations\EntityWithWritableMultiRelationManagerInterface;
 use OndraKoupil\AppTools\SimpleApi\Relations\MultiRelationManager;
 use OndraKoupil\AppTools\SimpleApi\Relations\SubItemsManager;
 use OndraKoupil\Tools\Arrays;
@@ -26,10 +28,11 @@ class DatabaseEntityManager
 		EntityManagerInterface,
 		EntityWithSubItemsManagerInterface,
 		EntityWithParentItemManagerInterface,
-		EntityWithMultiRelationManagerInterface,
+		EntityWithWritableMultiRelationManagerInterface,
 		AutoExpandingSubItemsManagerInterface,
 		AutoExpandingParentManagerInterface,
-		AutoExpandingRelatedItemsManagerInterface
+		AutoExpandingRelatedItemsManagerInterface,
+		EditableRelatedItemsManagerInterface
 {
 
 	/**
@@ -82,6 +85,11 @@ class DatabaseEntityManager
 	 * @var InternalAutoExpandingParams[] Indexed by context key
 	 */
 	protected $autoExpandRelatedItems = array();
+
+	/**
+	 * @var InternalAutoEditingParams[] Indexed numerically
+	 */
+	protected $autoEditables = array();
 
 
 
@@ -202,6 +210,20 @@ class DatabaseEntityManager
 		$this->autoExpandRelatedItems[$contextKey] = new InternalAutoExpandingParams($contextKey, $otherEntityId, $relatedItemExpandContext, $itemFieldToExpandRelatedItems);
 		$this->autoExpandRelatedItems[$contextKey]->setupCountParams($contextKey . 'Count');
 		$this->autoExpandRelatedItems[$contextKey]->setupIdsParams($contextKey . 'Ids');
+	}
+
+	function setupEditableRelatedItems(string $keyInInputSet, string $keyInInputAdd = '', string $keyInInputDelete = '', string $keyInInputClear = '', string $otherEntityId = '') {
+		if (!$keyInInputAdd) {
+			$keyInInputAdd = $keyInInputSet . 'Add';
+		}
+		if (!$keyInInputDelete) {
+			$keyInInputDelete = $keyInInputSet . 'Delete';
+		}
+		if (!$keyInInputClear) {
+			$keyInInputClear = $keyInInputSet . 'Clear';
+		}
+		$params = new InternalAutoEditingParams($keyInInputSet, $keyInInputAdd, $keyInInputDelete, $keyInInputClear, $otherEntityId);
+		$this->autoEditables[] = $params;
 	}
 
 
@@ -359,6 +381,24 @@ class DatabaseEntityManager
 		return $expandedFromSpec;
 	}
 
+	protected function prepareDataArrayForSaving($data) {
+		foreach ($this->autoEditables as $editable) {
+			if (array_key_exists($editable->keyDelete, $data)) {
+				unset($data[$editable->keyDelete]);
+			}
+			if (array_key_exists($editable->keySet, $data)) {
+				unset($data[$editable->keySet]);
+			}
+			if (array_key_exists($editable->keyAdd, $data)) {
+				unset($data[$editable->keyAdd]);
+			}
+			if (array_key_exists($editable->keyClear, $data)) {
+				unset($data[$editable->keyClear]);
+			}
+		}
+		return $data;
+	}
+
 	function getItem(string $id, $context = null): array {
 		$basicData = iterator_to_array($this->getItemRow($id));
 		return $this->expandItem($id, $basicData, $context);
@@ -400,9 +440,11 @@ class DatabaseEntityManager
 		$table = $this->tableName;
 		$data = $this->processSlugFields($data);
 		$data = $this->spec->beforeCreate($data);
-		$inserted = $this->notORM->$table()->insert($data);
+		$dataToInsert = $this->prepareDataArrayForSaving($data);
+		$inserted = $this->notORM->$table()->insert($dataToInsert);
 		$insertedItem = iterator_to_array($this->getItemRow($inserted['id']));
 		$this->spec->afterCreate($inserted['id'], $insertedItem);
+		$this->processAutoEditingRelationFromInput($inserted['id'], $data);
 		return $insertedItem;
 	}
 
@@ -454,11 +496,13 @@ class DatabaseEntityManager
 		$data = $this->spec->beforeUpdate($id, $data);
 		$is = $this->getItemRow($id);
 		$data = $this->processSlugFields($data, $id);
-
-		$is->update($data);
+		$dataToUpdate = $this->prepareDataArrayForSaving($data);
+		$is->update($dataToUpdate);
 		$result = $this->getItemRow($id);
 
 		$this->spec->afterUpdate($id, iterator_to_array($result));
+
+		$this->processAutoEditingRelationFromInput($id, $data);
 	}
 
 	/**
@@ -848,6 +892,40 @@ class DatabaseEntityManager
 
 	function preloadAllRelatedItems(string $otherEntityId = ''): void {
 		$this->getRelatedItemsRelationManagerById($otherEntityId)->preloadAll();
+	}
+
+	function setRelatedItemsForId(string $id, array $relatedIds, $otherEntityId = '') {
+		$this->getRelatedItemsRelationManagerById($otherEntityId)->set($id, $relatedIds);
+	}
+
+	function addRelatedItemsForId(string $id, array $relatedIds, $otherEntityId = '') {
+		$this->getRelatedItemsRelationManagerById($otherEntityId)->add($id, $relatedIds);
+	}
+
+	function deleteRelatedItemsForId(string $id, array $relatedIds, $otherEntityId = '') {
+		$this->getRelatedItemsRelationManagerById($otherEntityId)->delete($id, $relatedIds);
+	}
+
+	function clearRelatedItemsForId(string $id, $otherEntityId = '') {
+		$this->getRelatedItemsRelationManagerById($otherEntityId)->clear($id);
+	}
+
+	protected function processAutoEditingRelationFromInput(string $itemId, array $inputData) {
+		foreach ($this->autoEditables as $editable) {
+			if (array_key_exists($editable->keyClear, $inputData)) {
+				$this->clearRelatedItemsForId($itemId, $editable->entityId);
+			} elseif (array_key_exists($editable->keySet, $inputData)) {
+				$this->setRelatedItemsForId($itemId, $inputData[$editable->keySet], $editable->entityId);
+			} else {
+				if (array_key_exists($editable->keyAdd, $inputData) and $inputData[$editable->keyAdd]) {
+					$this->addRelatedItemsForId($itemId, $inputData[$editable->keyAdd], $editable->entityId);
+				}
+				if (array_key_exists($editable->keyDelete, $inputData) and $inputData[$editable->keyDelete]) {
+					$this->deleteRelatedItemsForId($itemId, $inputData[$editable->keyDelete], $editable->entityId);
+				}
+			}
+		}
+
 	}
 
 

@@ -3,6 +3,7 @@
 namespace OndraKoupil\AppTools\SimpleApi\Relations;
 
 use NotORM;
+use OndraKoupil\Tools\Arrays;
 
 class MultiRelationManager {
 
@@ -75,6 +76,45 @@ class MultiRelationManager {
 	function getAll(): array {
 		$this->preloadAll();
 		return $this->cachedData;
+	}
+
+	function set(string $id, array $relatedIds) {
+		$this->clear($id);
+		$this->add($id, $relatedIds);
+	}
+
+	function add(string $id, array $relatedIds) {
+		$valuesToInsert = array();
+		$this->preload($id);
+		$current = $this->get($id);
+		foreach ($relatedIds as $relatedId) {
+			if (!in_array($relatedId, $current)) {
+				$valuesToInsert[] = array($this->myColumnName => $id, $this->otherColumnName => $relatedId);
+			}
+		}
+		$tableName = $this->relationTableName;
+		$this->db->$tableName()->insert_multi($valuesToInsert);
+		if (isset($this->cachedData[$id])) {
+			foreach ($relatedIds as $relatedId) {
+				if (!in_array($relatedId, $this->cachedData[$id])) {
+					$this->cachedData[$id][] = $relatedId;
+				}
+			}
+		}
+	}
+
+	function delete(string $id, array $relatedIds) {
+		$tableName = $this->relationTableName;
+		$this->db->$tableName()->where($this->myColumnName, $id)->where($this->otherColumnName, $relatedIds)->delete();
+		if (isset($this->cachedData[$id])) {
+			$this->cachedData[$id] = Arrays::deleteValues($this->cachedData[$id], $relatedIds);
+		}
+	}
+
+	function clear(string $id) {
+		$tableName = $this->relationTableName;
+		$this->db->$tableName()->where($this->myColumnName, $id)->delete();
+		$this->cachedData[$id] = array();
 	}
 
 
