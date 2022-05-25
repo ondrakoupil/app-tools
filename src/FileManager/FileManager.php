@@ -214,6 +214,45 @@ class FileManager {
 	}
 
 	/**
+	 * @param string $originalFilePath
+	 * @param string $newFilename
+	 * @param $newFileContext
+	 * @param bool $overwriteIfExists
+	 *
+	 * @return string final new filename, differs from $newFilename only if $overwriteIfExists is false and $newFilename is already occupied
+	 */
+	function cloneFile(string $originalFilePath, string $newFilename, $newFileContext = array(), bool $overwriteIfExists = false): string {
+
+		if (!file_exists($originalFilePath) or !is_readable($originalFilePath)) {
+			throw new FileException('File not found: ' . $originalFilePath);
+		}
+
+		if (is_dir($originalFilePath)) {
+			throw new FileException('Source file is a directory: ' . $originalFilePath);
+		}
+
+		if ($this->doesFileExist($newFilename, $newFileContext)) {
+			if ($overwriteIfExists) {
+				$this->deleteFile($newFilename, $newFileContext);
+			} else {
+				$newFilename = $this->findFreeFilename($newFilename, $newFileContext);
+			}
+		}
+
+		$newFilePath = $this->getPathOfFile($newFilename, $newFileContext);
+
+		$ok = copy($originalFilePath, $newFilePath);
+
+		if (!$ok) {
+			throw new FileException('Failed copying ' . $originalFilePath . ' to ' . $newFilePath);
+		}
+
+		Files::perms($newFilePath);
+
+		return $newFilename;
+	}
+
+	/**
 	 * @param string $filename
 	 * @param string|string[] $context
 	 *
