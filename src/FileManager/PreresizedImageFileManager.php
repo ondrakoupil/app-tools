@@ -3,6 +3,7 @@
 namespace OndraKoupil\AppTools\FileManager;
 
 use InvalidArgumentException;
+use OndraKoupil\AppTools\FileManager\Images\ImageDimensions;
 use OndraKoupil\AppTools\FileManager\Images\ImageVersion;
 use RuntimeException;
 
@@ -105,7 +106,10 @@ class PreresizedImageFileManager {
 		return $this->fileManager->doesFileExist($filename, $this->originalFileContext);
 	}
 
-	public function getImageUrl(string $filename, string $version, bool $addTimestamps = false): string {
+	public function getImageUrl(string $filename, string $version = '', bool $addTimestamps = false): string {
+		if ($version === '') {
+			$version = $this->getOriginalFileContext();
+		}
 		$url = $this->fileManager->getUrlOfFile($filename, $version);
 		if ($addTimestamps) {
 			$t = $this->fileManager->getFileTime($filename, $version);
@@ -126,7 +130,20 @@ class PreresizedImageFileManager {
 		return $versions;
 	}
 
+	public function getImageDimensions(string $filename, string $version = ''): ?ImageDimensions {
+		$path = $this->getImagePath($filename, $version);
+		$im = @getimagesize($path);
+		if ($im) {
+			return new ImageDimensions($im[0], $im[1]);
+		} else {
+			return null;
+		}
+	}
+
 	public function getImagePath(string $filename, string $version): string {
+		if ($version === '') {
+			$version = $this->getOriginalFileContext();
+		}
 		return $this->fileManager->getPathOfFile($filename, $version);
 	}
 
