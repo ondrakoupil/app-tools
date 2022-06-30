@@ -5,6 +5,11 @@ namespace OndraKoupil\AppTools\SimpleApi;
 interface EntityManagerInterface {
 
 	/**
+	 * @return string[]
+	 */
+	function getAllIds(): array;
+
+	/**
 	 * @param mixed $context
 	 *
 	 * @return array

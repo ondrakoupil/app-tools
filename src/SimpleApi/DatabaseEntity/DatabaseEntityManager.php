@@ -91,6 +91,11 @@ class DatabaseEntityManager
 	 */
 	protected $autoEditables = array();
 
+	/**
+	 * @var callable [key] => function($objects) {}
+	 */
+	protected $otherExpanding = array();
+
 
 
 	function __construct(
@@ -101,7 +106,7 @@ class DatabaseEntityManager
 
 		$this->notORM = $notORM;
 		$this->tableName = $tableName;
-		
+
 		if ($spec) {
 			$this->spec = $spec;
 		} else {
@@ -226,6 +231,21 @@ class DatabaseEntityManager
 		$this->autoEditables[] = $params;
 	}
 
+	function setupExpanding(string $contextKey, callable $callback) {
+		$this->otherExpanding[$contextKey] = $callback;
+	}
+
+	function getAllIds(): array {
+		$table = $this->tableName;
+		$allIdsRequest = $this->notORM->$table();
+		$allIdsRequest = $this->spec->getAllItemsRequest($allIdsRequest);
+		$allIdsRequest->select('id');
+		$r = array();
+		foreach ($allIdsRequest as $row) {
+			$r[] = $row['id'];
+		}
+		return $r;
+	}
 
 	/**
 	 * @param string $id
@@ -234,7 +254,7 @@ class DatabaseEntityManager
 	 * @throws ItemNotFoundException
 	 * @throws InvalidArgumentException
 	 */
-	protected function getItemRow(string $id): NotORM_Row {
+	function getItemRow(string $id): NotORM_Row {
 		if (!$this->spec->isFormallyValidId($id)) {
 			throw new InvalidArgumentException('Invalid ID ' . $id);
 		}
@@ -253,7 +273,7 @@ class DatabaseEntityManager
 	 * @throws ItemNotFoundException
 	 * @throws InvalidArgumentException
 	 */
-	protected function getManyItemRows(array $ids): array {
+	function getManyItemRows(array $ids): array {
 		foreach ($ids as $id) {
 			if (!$this->spec->isFormallyValidId($id)) {
 				throw new InvalidArgumentException('Invalid ID ' . $id);
@@ -305,6 +325,11 @@ class DatabaseEntityManager
 					if ($context[$autoExpandData->idsContextKey] ?? false) {
 						$expandedFromSpec[$autoExpandData->idsField] = $this->getRelatedItemsById($id, $autoExpandData->entityId);
 					}
+				}
+			}
+			foreach ($this->otherExpanding as $contextKey => $callable) {
+				if ($context[$contextKey] ?? false) {
+					$expandedFromSpec = $callable(array($expandedFromSpec))[0];
 				}
 			}
 		}
@@ -377,6 +402,12 @@ class DatabaseEntityManager
 					}
 				}
 			}
+			foreach ($this->otherExpanding as $contextKey => $callable) {
+				if ($context[$contextKey] ?? false) {
+					$expandedFromSpec = $callable($expandedFromSpec);
+				}
+			}
+
 		}
 		return $expandedFromSpec;
 	}
