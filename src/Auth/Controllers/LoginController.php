@@ -90,7 +90,9 @@ class LoginController extends BaseAuthController {
 			$this->authenticator->extendToken($token, $this->tokenValidity, new DateTime('now'));
 		}
 
-		$this->logger->info('Successful login with username ' . $username . ' and password length ' . mb_strlen($password) . ', generated token ' . $token);
+		if ($this->logger) {
+			$this->logger->info('Successful login with username ' . $username . ' and password length ' . mb_strlen($password) . ', generated token ' . $token);
+		}
 
 		return $this->respondWith(
 			$response,
