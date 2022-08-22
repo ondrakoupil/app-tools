@@ -3,7 +3,6 @@
 namespace OndraKoupil\AppTools\Middleware;
 
 use DateInterval;
-use OndraKoupil\AppTools\Auth\Authenticator;
 use OndraKoupil\AppTools\Auth\AuthenticatorInterface;
 use OndraKoupil\AppTools\Auth\ValidationResult;
 use Psr\Http\Message\RequestInterface;
@@ -24,7 +23,7 @@ class AuthMiddleware implements MiddlewareInterface {
 	const USER = 'user';
 
 	/**
-	 * @var Authenticator
+	 * @var AuthenticatorInterface
 	 */
 	private $authenticator;
 
