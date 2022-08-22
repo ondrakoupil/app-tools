@@ -18,7 +18,7 @@ class ReaderWithCallback {
 
 	/**
 	 * @param ReaderInterface $reader
-	 * @param callable $callback
+	 * @param callable $callback function($row, $index)
 	 */
 	function __construct(ReaderInterface $reader, $callback) {
 		$this->callback = $callback;
