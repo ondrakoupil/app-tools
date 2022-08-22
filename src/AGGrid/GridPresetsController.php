@@ -4,8 +4,8 @@ namespace OndraKoupil\AppTools\AGGrid;
 
 use Exception;
 use PDO;
-use Slim\Http\Request;
-use Slim\Http\Response;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Universal slim controller for handling API calls for AGGrid column presets
@@ -30,19 +30,19 @@ class GridPresetsController {
 
 	function __construct(
 		PDO $pdo,
-		$tableName,
-		$gridName
+		    $tableName,
+		    $gridName
 	) {
 		$this->pdo = $pdo;
 		$this->gridName = $gridName;
 		$this->tableName = $tableName;
 	}
 
-	function __invoke(Request $request, Response $response, $args) {
-		return $this->get($request, $response, $args);
+	function __invoke(ServerRequestInterface $request, ResponseInterface $response) {
+		return $this->get($request, $response);
 	}
-	
-	function get(Request $request, Response $response, $args) {
+
+	function get(ServerRequestInterface $request, ResponseInterface $response) {
 		$statement = $this->pdo->prepare(
 			'
 				SELECT
@@ -68,15 +68,17 @@ class GridPresetsController {
 			);
 		}
 
-		return $response->withJson($data);
+		$response->getBody()->write(json_encode($data, JSON_THROW_ON_ERROR));
+		return $response;
 	}
 
-	function create(Request $request, Response $response, $args) {
+	function create(ServerRequestInterface $request, ResponseInterface $response) {
 
-		$name = $request->getParam('name');
-		$filters = $request->getParam('filters');
-		$sort = $request->getParam('sort');
-		$columns = $request->getParam('columns');
+		$params = $request->getParsedBody();
+		$name = $params['name'] ?? null;
+		$filters = $params['filters'] ?? null;
+		$sort = $params['sort'] ?? null;
+		$columns = $params['columns'] ?? null;
 
 		if (!$filters) {
 			$filters = null;
@@ -124,12 +126,14 @@ class GridPresetsController {
 			'columns' => $columns,
 		);
 
-		return $response->withJson($data);
+		$response->getBody()->write(json_encode($data, JSON_THROW_ON_ERROR));
+		return $response;
 	}
 
-	function delete(Request $request, Response $response, $args) {
+	function delete(ServerRequestInterface $request, ResponseInterface $response) {
 
-		$id = $request->getParam('id');
+		$params = $request->getParsedBody();
+		$id = $params['id'] ?? null;
 
 		if (!$id) {
 			throw new Exception('No ID was given.');
@@ -154,12 +158,13 @@ class GridPresetsController {
 
 	}
 
-	function update(Request $request, Response $response, $args) {
+	function update(ServerRequestInterface $request, ResponseInterface $response) {
 
-		$id = $request->getParam('id');
-		$filters = $request->getParam('filters');
-		$sort = $request->getParam('sort');
-		$columns = $request->getParam('columns');
+		$params = $request->getParsedBody();
+		$id = $params['id'] ?? null;
+		$filters = $params['filters'] ?? null;
+		$sort = $params['sort'] ?? null;
+		$columns = $params['columns'] ?? null;
 
 		if (!$id) {
 			throw new Exception('No ID was given.');
@@ -217,7 +222,9 @@ class GridPresetsController {
 			'sort'    => $preset['sort'] ? json_decode($preset['sort'], true, 512, JSON_THROW_ON_ERROR) : null,
 		);
 
-		return $response->withJson($data);
+		$response->getBody()->write(json_encode($data, JSON_THROW_ON_ERROR));
+		return $response;
+
 	}
 
 
