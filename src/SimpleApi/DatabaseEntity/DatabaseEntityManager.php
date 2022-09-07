@@ -5,6 +5,7 @@ namespace OndraKoupil\AppTools\SimpleApi\DatabaseEntity;
 use Exception;
 use InvalidArgumentException;
 use NotORM;
+use NotORM_Result;
 use NotORM_Row;
 use OndraKoupil\AppTools\SimpleApi\Entity\DefaultEntity;
 use OndraKoupil\AppTools\SimpleApi\Entity\EntitySpec;
@@ -235,7 +236,7 @@ class DatabaseEntityManager
 		$this->otherExpanding[$contextKey] = $callback;
 	}
 
-	function getAllIds(): array {
+	function getAllIds($restriction = null): array {
 		$table = $this->tableName;
 		$allIdsRequest = $this->notORM->$table();
 		$allIdsRequest = $this->spec->getAllItemsRequest($allIdsRequest);
@@ -440,10 +441,11 @@ class DatabaseEntityManager
 		return $this->expandManyItems($allData, $context);
 	}
 
-	function getAllItems($context = null): array {
+	function getAllItems($context = null, $restriction = null): array {
 		$table = $this->tableName;
 		$request = $this->notORM->$table();
 		$requestProcessed = $this->spec->getAllItemsRequest($request);
+		$requestProcessed = $this->applyRestrictionToDbRequest($restriction, $requestProcessed);
 		$items = array_values(array_map('iterator_to_array', iterator_to_array($requestProcessed)));
 		$itemsFiltered = array_filter($items, array($this->spec, 'getAllItemsFilter'));
 		return $this->expandManyItems($itemsFiltered, $context);
@@ -959,5 +961,26 @@ class DatabaseEntityManager
 
 	}
 
+
+	protected function applyRestrictionToDbRequest($restriction, NotORM_Result $result) {
+		if (!$restriction) {
+			return $result;
+		}
+
+		if (is_callable($restriction)) {
+			$restrictedResult = $restriction($result);
+			if (!($restrictedResult instanceof NotORM_Result)) {
+				throw new Exception('Result of restriction must be a NotORM_Result!');
+			}
+			return $restrictedResult;
+		}
+
+		if (is_array($restriction)) {
+			return $result->where($restriction);
+		}
+
+		throw new Exception('Restriction must be a callable or an array passable to NotORM_Result->where()!');
+
+	}
 
 }

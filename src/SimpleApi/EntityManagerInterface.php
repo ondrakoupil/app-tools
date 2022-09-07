@@ -5,16 +5,19 @@ namespace OndraKoupil\AppTools\SimpleApi;
 interface EntityManagerInterface {
 
 	/**
+	 * @param mixed $restriction Optionally can somehow limit which items to select. Implementation-specific.
+	 *
 	 * @return string[]
 	 */
-	function getAllIds(): array;
+	function getAllIds($restriction = null): array;
 
 	/**
-	 * @param mixed $context
+	 * @param mixed $context Will be passed to Entity for expanding items
+	 * @param mixed $restriction Optionally can somehow limit which items to select. Implementation-specific.
 	 *
 	 * @return array
 	 */
-	function getAllItems($context = null): array;
+	function getAllItems($context = null, $restriction = null): array;
 
 	function createItem(array $data): array;
 
