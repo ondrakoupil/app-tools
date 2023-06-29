@@ -59,8 +59,8 @@ class EntityController {
 		return $r;
 	}
 
-	function respondUnauthorized(ResponseInterface $response): ResponseInterface {
-		return $this->respondWithError($response, 403, 'You are not allowed to do this.');
+	function respondUnauthorized(ResponseInterface $response, $offendingItemId = ''): ResponseInterface {
+		return $this->respondWithError($response, 403, 'You are not allowed to do this' . ($offendingItemId ? (' with item ID ' . $offendingItemId . '.') : '.'));
 	}
 
 	function list(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface {
@@ -80,7 +80,7 @@ class EntityController {
 			$data = $this->manager->getItem($id, $parts);
 			if ($this->authorizator and $this->identityExtractor) {
 				if (!$this->authorizator->canView($this->identityExtractor->getUser($request), $data)) {
-					return $this->respondUnauthorized($response);
+					return $this->respondUnauthorized($response, $id);
 				}
 			}
 			return $this->respondWithJson($response, $data);
@@ -121,10 +121,13 @@ class EntityController {
 	}
 
 	function delete(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface {
-		if ($this->authorizator) {
-			throw new Exception('Not implemented yet!');
-		}
 		try {
+			$item = $this->manager->getItem($id);
+			if ($this->authorizator and $this->identityExtractor) {
+				if (!$this->authorizator->canDelete($this->identityExtractor->getUser($request), $item)) {
+					return $this->respondUnauthorized($response, $id);
+				}
+			}
 			$this->manager->deleteItem($id);
 			return $this->respondWithNothing($response);
 		} catch (ItemNotFoundException $e) {
@@ -133,15 +136,23 @@ class EntityController {
 	}
 
 	function deleteMany(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface {
-		if ($this->authorizator) {
-			throw new Exception('Not implemented yet!');
-		}
 		$body = $request->getParsedBody();
 		if (!($body['id'] ?? null)) {
 			return $this->respondWithError($response, 400, 'Missing [id] parameter with ID\'s to delete.');
 		}
 		$ids = Arrays::arrayize($body['id']);
 		try {
+
+			if ($this->authorizator) {
+				$items = $this->manager->getManyItems($ids);
+				$user = $this->identityExtractor->getUser($request);
+				foreach ($items as $testedItem) {
+					if (!$this->authorizator->canDelete($user, $testedItem)) {
+						return $this->respondUnauthorized($response, $testedItem['id']);
+					}
+				}
+			}
+
 			$this->manager->deleteManyItems($ids);
 		} catch (ItemNotFoundException $e) {
 			return $this->respondWithError($response, 404, 'Item with ID ' . $e->notFoundId . ' not found.');
@@ -151,14 +162,20 @@ class EntityController {
 	}
 
 	function edit(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface {
-		if ($this->authorizator) {
-			throw new Exception('Not implemented yet!');
-		}
 		$data = $request->getParsedBody();
 		if (!$data) {
 			return $this->respondWithError($response, 400, 'Missing body with data.');
 		}
 		try {
+			if ($this->authorizator) {
+				$user = $this->identityExtractor->getUser($request);
+				$item = $this->manager->getItem($id);
+				$itemChanges = $data;
+				$can = $this->authorizator->canEdit($user, $item, $itemChanges);
+				if (!$can) {
+					return $this->respondUnauthorized($response, $id);
+				}
+			}
 			$this->manager->updateItem($id, $data);
 			return $this->respondWithNothing($response);
 		} catch (ItemNotFoundException $e) {

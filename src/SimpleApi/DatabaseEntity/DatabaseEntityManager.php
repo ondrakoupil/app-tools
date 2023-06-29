@@ -236,10 +236,10 @@ class DatabaseEntityManager
 		$this->otherExpanding[$contextKey] = $callback;
 	}
 
-	function getAllIds($restriction = null): array {
+	function getAllIds($restriction = null, $context = null): array {
 		$table = $this->tableName;
 		$allIdsRequest = $this->notORM->$table();
-		$allIdsRequest = $this->spec->getAllItemsRequest($allIdsRequest);
+		$allIdsRequest = $this->spec->getAllItemsRequest($allIdsRequest, $context);
 		$allIdsRequest->select('id');
 		$r = array();
 		foreach ($allIdsRequest as $row) {
@@ -444,7 +444,7 @@ class DatabaseEntityManager
 	function getAllItems($context = null, $restriction = null): array {
 		$table = $this->tableName;
 		$request = $this->notORM->$table();
-		$requestProcessed = $this->spec->getAllItemsRequest($request);
+		$requestProcessed = $this->spec->getAllItemsRequest($request, $context);
 		$requestProcessed = $this->applyRestrictionToDbRequest($restriction, $requestProcessed);
 		$items = array_values(array_map('iterator_to_array', iterator_to_array($requestProcessed)));
 		$itemsFiltered = array_filter($items, array($this->spec, 'getAllItemsFilter'));

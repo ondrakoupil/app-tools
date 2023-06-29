@@ -67,11 +67,11 @@ class DefaultEntity implements EntitySpec {
 		}, $items);
 	}
 
-	function getAllItemsRequest(NotORM_Result $request): NotORM_Result {
+	function getAllItemsRequest(NotORM_Result $request, $context = null): NotORM_Result {
 		return $request;
 	}
 
-	function getAllItemsFilter(array $items): array {
+	function getAllItemsFilter(array $items, $context = null): array {
 		return $items;
 	}
 
