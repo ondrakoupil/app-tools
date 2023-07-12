@@ -12,6 +12,20 @@ use OndraKoupil\AppTools\Importing\Tools\MassDbInserter;
 use OndraKoupil\Tools\Strings;
 use RuntimeException;
 
+/**
+ * Importér, který načtená data ukládá do databáze.
+ *
+ * Používá DatabaseWrapper. Zavolej $db->enableDryRun(), pokud chceš import jen vyzkoušet.
+ *
+ * Zajímavé parametry a featury:
+ *
+ * - setBatchSize - zapojí MassDbInserter a ukládá více položek naráz
+ * - setMappings - automatické mapování políček ze zdroje do cíle, buď úplný výčet, nebo jen ta která neodpovídají
+ * - setFixedValues - automaticky přidá nějaké napevno dané hodnoty
+ * - setTransformCallback - manuální callback na transformaci
+ * - setTruncateBefore - umožní promazat cílovou tabulku před importem
+ *
+ */
 class DatabaseImporter implements ImporterInterface {
 
 	/**
@@ -52,8 +66,10 @@ class DatabaseImporter implements ImporterInterface {
 	protected $importedItemsCount = 0;
 
 	protected $mappings = null;
-	protected $keepOtherFieldsAfterApplyingMappings = false;
-	protected $applyMappingsBeforeTransformCallback = false;
+	protected $keepOtherFieldsAfterApplyingMappings = true;
+	protected $applyMappingsBeforeTransformCallback = true;
+
+	protected $fixedValues = null;
 
 	protected $truncateBefore = false;
 
@@ -133,10 +149,17 @@ class DatabaseImporter implements ImporterInterface {
 	 *
 	 * @param array $mappings
 	 */
-	public function setMappings(array $mappings, $keepOtherFieldsAfterApplyingMappings = false, $applyBeforeTransformCallback = false): void {
+	public function setMappings(array $mappings, $keepOtherFieldsAfterApplyingMappings = true, $applyBeforeTransformCallback = true): void {
 		$this->mappings = $mappings;
 		$this->keepOtherFieldsAfterApplyingMappings = $keepOtherFieldsAfterApplyingMappings;
 		$this->applyMappingsBeforeTransformCallback = $applyBeforeTransformCallback;
+	}
+
+	/**
+	 * @param array $fixedValues
+	 */
+	public function setFixedValues(array $fixedValues): void {
+		$this->fixedValues = $fixedValues;
 	}
 
 
@@ -203,6 +226,10 @@ class DatabaseImporter implements ImporterInterface {
 			$item = self::processMappings($item, $this->mappings, $this->keepOtherFieldsAfterApplyingMappings);
 		}
 
+		if ($this->fixedValues) {
+			$item = self::processFixedValues($item, $this->fixedValues);
+		}
+
 		if ($this->transformCallback) {
 			$savableItem = call_user_func_array($this->transformCallback, array($item, $itemPosition));
 			if (!$savableItem) {
@@ -253,17 +280,39 @@ class DatabaseImporter implements ImporterInterface {
 		return $this->importedItemsCount;
 	}
 
-	protected static function processMappings(mixed $savableItem, mixed $mappings, $keepOtherFields = false) {
+	/**
+	 *
+	 *
+	 * @param array $item
+	 * @param array|null $mappings
+	 * @param bool $keepOtherFields
+	 *
+	 * @return array
+	 */
+	protected static function processMappings(array $item, array $mappings, bool $keepOtherFields = false): array {
 		if (!$keepOtherFields) {
 			$out = array();
 		} else {
-			$out = $savableItem;
+			$out = $item;
 		}
 
-		foreach ($mappings as $origField => $newField) {
-			$out[$newField] = $savableItem[$origField] ?? null;
-			if ($keepOtherFields) {
-				unset($out[$origField]);
+		if ($mappings) {
+			foreach ($mappings as $origField => $newField) {
+				$out[$newField] = $item[$origField] ?? null;
+				if ($keepOtherFields) {
+					unset($out[$origField]);
+				}
+			}
+		}
+
+		return $out;
+	}
+
+	protected static function processFixedValues(array $item, ?array $fixedValues): array {
+		$out = $item;
+		if ($fixedValues) {
+			foreach ($fixedValues as $fixedValueName => $fixedValueValue) {
+				$out[$fixedValueName] = $fixedValueValue;
 			}
 		}
 		return $out;
