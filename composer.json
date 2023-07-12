@@ -3,7 +3,7 @@
     "description": "A bunch of tools and utilities for my projects",
     "type": "library",
     "require": {
-        "ondrakoupil/tools": "^1.2",
+        "ondrakoupil/tools": "^1.2.5",
         "ext-json": "*",
         "ext-pdo": "*",
         "php": ">=7.3",

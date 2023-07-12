@@ -2,6 +2,7 @@
 
 namespace OndraKoupil\AppTools\Importing\Tools;
 
+use Exception;
 use NotORM;
 
 /**
@@ -84,8 +85,12 @@ class MassDbInserter {
 			return;
 		}
 
-		$this->db->getWriteDb()->{$this->tableName}()->insert_multi($this->buffer);
-		$this->buffer = array();
+		try {
+			$this->db->getWriteDb()->{$this->tableName}()->insert_multi($this->buffer);
+			$this->buffer = array();
+		} catch (Exception $e) {
+			throw new Exception('MassDbInserter got error when inserting these items into table `' . $this->tableName . '`:' . "\n" . print_r($this->buffer, true), $e->getCode(), $e);
+		}
 	}
 
 

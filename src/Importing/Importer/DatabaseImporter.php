@@ -2,6 +2,7 @@
 
 namespace OndraKoupil\AppTools\Importing\Importer;
 
+use Exception;
 use NotORM;
 use NotORM_Result;
 use NotORM_Row;
@@ -50,13 +51,19 @@ class DatabaseImporter implements ImporterInterface {
 
 	protected $importedItemsCount = 0;
 
+	protected $mappings = null;
+	protected $keepOtherFieldsAfterApplyingMappings = false;
+	protected $applyMappingsBeforeTransformCallback = false;
+
+	protected $truncateBefore = false;
+
 	/**
 	 * @param DatabaseWrapper $db
 	 * @param string $tableName
 	 * @param ReaderInterface $reader
-	 * @param callable $transformCallback function($readRow, $itemPosition) => $dataToSaveToDb
+	 * @param ?callable $transformCallback function($readRow, $itemPosition) => $dataToSaveToDb
 	 */
-	public function __construct(DatabaseWrapper $db, string $tableName, ReaderInterface $reader, callable $transformCallback = null) {
+	public function __construct(DatabaseWrapper $db, string $tableName, ReaderInterface $reader, ?callable $transformCallback = null) {
 		$this->db = $db;
 		$this->tableName = $tableName;
 		$this->transformCallback = $transformCallback;
@@ -73,6 +80,13 @@ class DatabaseImporter implements ImporterInterface {
 	 */
 	public function setAfterSaveCallback(callable $afterSaveCallback): void {
 		$this->afterSaveCallback = $afterSaveCallback;
+	}
+
+	/**
+	 * @param bool $truncateBefore
+	 */
+	public function setTruncateBefore(bool $truncateBefore): void {
+		$this->truncateBefore = $truncateBefore;
 	}
 
 	/**
@@ -115,6 +129,19 @@ class DatabaseImporter implements ImporterInterface {
 	}
 
 	/**
+	 * Nastaví mapování původních sloupečků na nové.
+	 *
+	 * @param array $mappings
+	 */
+	public function setMappings(array $mappings, $keepOtherFieldsAfterApplyingMappings = false, $applyBeforeTransformCallback = false): void {
+		$this->mappings = $mappings;
+		$this->keepOtherFieldsAfterApplyingMappings = $keepOtherFieldsAfterApplyingMappings;
+		$this->applyMappingsBeforeTransformCallback = $applyBeforeTransformCallback;
+	}
+
+
+
+	/**
 	 * Spustí import.
 	 *
 	 * @return void
@@ -124,6 +151,10 @@ class DatabaseImporter implements ImporterInterface {
 			throw new RuntimeException('No reader has been specified.');
 		}
 		$this->importedItemsCount = 0;
+
+		if ($this->truncateBefore) {
+			$this->getInsertTable()->delete();
+		}
 
 		$this->reader->startReading();
 
@@ -152,11 +183,37 @@ class DatabaseImporter implements ImporterInterface {
 		return $this->db->getWriteDb()->{$this->tableName}();
 	}
 
+	public function setBatchSize(int $batchSize): void {
+		if ($batchSize <= 1) {
+			$this->massInserter = null;
+		} else {
+			$this->massInserter = new MassDbInserter(
+				$this->db,
+				$this->tableName,
+				$batchSize
+			);
+		}
+	}
+
+
 
 	protected function processOneItem($item, $itemPosition) {
-		$savableItem = call_user_func_array($this->transformCallback, array($item, $itemPosition));
-		if (!$savableItem) {
-			return;
+
+		if ($this->mappings and $this->applyMappingsBeforeTransformCallback) {
+			$item = self::processMappings($item, $this->mappings, $this->keepOtherFieldsAfterApplyingMappings);
+		}
+
+		if ($this->transformCallback) {
+			$savableItem = call_user_func_array($this->transformCallback, array($item, $itemPosition));
+			if (!$savableItem) {
+				return;
+			}
+		} else {
+			$savableItem = $item;
+		}
+
+		if ($this->mappings and !$this->applyMappingsBeforeTransformCallback) {
+			$savableItem = self::processMappings($savableItem, $this->mappings, $this->keepOtherFieldsAfterApplyingMappings);
 		}
 
 		$givenId = $this->insertToDb($savableItem);
@@ -170,22 +227,46 @@ class DatabaseImporter implements ImporterInterface {
 	}
 
 	protected function insertToDb($item) {
-		if ($this->massInserter) {
-			$this->massInserter->insert($item);
-			$givenId = null;
-		} else {
-			$inserted = $this->getInsertTable()->insert($item);
-			if (!$inserted) {
-				$givenId = $this->db->generateFakeId();
+
+		try {
+			if ($this->massInserter) {
+				$this->massInserter->insert($item);
+				$givenId = null;
 			} else {
-				$givenId = $inserted[$this->idColumn];
+				$inserted = $this->getInsertTable()->insert($item);
+				if (!$inserted) {
+					$givenId = $this->db->generateFakeId();
+				} else {
+					$givenId = $inserted[$this->idColumn];
+				}
 			}
+		} catch (Exception $e) {
+			$itemId = $item['id'] ?? print_r($item, true);
+			throw new Exception('Error when saving to database - item ' . $itemId, 1, $e);
 		}
+
+
 		return $givenId;
 	}
 
 	public function getImportedItemsCount() {
 		return $this->importedItemsCount;
+	}
+
+	protected static function processMappings(mixed $savableItem, mixed $mappings, $keepOtherFields = false) {
+		if (!$keepOtherFields) {
+			$out = array();
+		} else {
+			$out = $savableItem;
+		}
+
+		foreach ($mappings as $origField => $newField) {
+			$out[$newField] = $savableItem[$origField] ?? null;
+			if ($keepOtherFields) {
+				unset($out[$origField]);
+			}
+		}
+		return $out;
 	}
 
 }
