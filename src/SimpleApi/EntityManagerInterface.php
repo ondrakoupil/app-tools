@@ -2,6 +2,8 @@
 
 namespace OndraKoupil\AppTools\SimpleApi;
 
+use OndraKoupil\AppTools\SimpleApi\Entity\Restriction;
+
 interface EntityManagerInterface {
 
 	/**
@@ -9,15 +11,15 @@ interface EntityManagerInterface {
 	 *
 	 * @return string[]
 	 */
-	function getAllIds($restriction = null): array;
+	function getAllIds(?Restriction $restriction = null): array;
 
 	/**
 	 * @param mixed $context Will be passed to Entity for expanding items
-	 * @param mixed $restriction Optionally can somehow limit which items to select. Implementation-specific.
+	 * @param Restriction|null $restriction Optionally can somehow limit which items to select. Implementation-specific.
 	 *
 	 * @return array
 	 */
-	function getAllItems($context = null, $restriction = null): array;
+	function getAllItems($context = null, ?Restriction $restriction = null): array;
 
 	function createItem(array $data): array;
 

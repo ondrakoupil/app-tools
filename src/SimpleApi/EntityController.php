@@ -6,6 +6,8 @@ use Exception;
 use NotORM_Result;
 use OndraKoupil\AppTools\SimpleApi\Auth\EntityAuthorizatorInterface;
 use OndraKoupil\AppTools\SimpleApi\Auth\IdentityExtractorInterface;
+use OndraKoupil\AppTools\SimpleApi\Controller\FilterGetterInterface;
+use OndraKoupil\AppTools\SimpleApi\Entity\Restriction;
 use OndraKoupil\Tools\Arrays;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -28,6 +30,11 @@ class EntityController {
 	 */
 	private $identityExtractor;
 
+	/**
+	 * @var FilterGetterInterface
+	 */
+	protected $filterGetter = null;
+
 	function __construct(
 		EntityManagerInterface $manager,
 		IdentityExtractorInterface $identityExtractor = null,
@@ -41,6 +48,10 @@ class EntityController {
 		if ($this->authorizator and !$this->identityExtractor) {
 			throw new Exception('To use Authorizator in EntityController, an IdentityExtractor is required!');
 		}
+	}
+
+	function setupListFilter(?FilterGetterInterface $filterGetter) {
+		$this->filterGetter = $filterGetter;
 	}
 
 	function respondWithNothing(ResponseInterface $response): ResponseInterface {
@@ -65,11 +76,26 @@ class EntityController {
 
 	function list(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface {
 		$parts = $this->getPartsFromRequest($request);
-		$restriction = null;
+		$authRestriction = null;
 		if ($this->authorizator and $this->identityExtractor) {
 			$user = $this->identityExtractor->getUser($request);
-			$restriction = $this->authorizator->createListRestriction($user);
+			$authRestriction = $this->authorizator->createListRestriction($user);
 		}
+		$filterRestriction = null;
+		if ($this->filterGetter) {
+			$user = null;
+			if ($this->identityExtractor) {
+				$user = $this->identityExtractor->getUser($request);
+			}
+			$filterRestriction = $this->filterGetter->getFilterFromRequest($request, $user, $this->authorizator);
+		}
+
+		if ($authRestriction or $filterRestriction) {
+			$restriction = Restriction::createFromRestrictions($authRestriction, $filterRestriction);
+		} else {
+			$restriction = null;
+		}
+
 		$allItems = $this->manager->getAllItems($parts, $restriction);
 		return $this->respondWithJson($response, $allItems);
 	}

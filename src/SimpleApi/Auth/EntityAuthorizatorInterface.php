@@ -3,6 +3,7 @@
 namespace OndraKoupil\AppTools\SimpleApi\Auth;
 
 use OndraKoupil\AppTools\Auth\IdentityWithRolesInterface;
+use OndraKoupil\AppTools\SimpleApi\Entity\Restriction;
 
 interface EntityAuthorizatorInterface {
 
@@ -12,7 +13,7 @@ interface EntityAuthorizatorInterface {
 
 	function canDelete(IdentityWithRolesInterface $user, $item): bool;
 
-	function createListRestriction(IdentityWithRolesInterface $user);
+	function createListRestriction(IdentityWithRolesInterface $user): ?Restriction;
 
 	function canEdit(IdentityWithRolesInterface $user, $item, $itemChanges): bool;
 

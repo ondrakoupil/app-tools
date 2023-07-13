@@ -9,6 +9,7 @@ use NotORM_Result;
 use NotORM_Row;
 use OndraKoupil\AppTools\SimpleApi\Entity\DefaultEntity;
 use OndraKoupil\AppTools\SimpleApi\Entity\EntitySpec;
+use OndraKoupil\AppTools\SimpleApi\Entity\Restriction;
 use OndraKoupil\AppTools\SimpleApi\EntityManagerInterface;
 use OndraKoupil\AppTools\SimpleApi\ItemNotFoundException;
 use OndraKoupil\AppTools\SimpleApi\Relations\AutoExpandingParentManagerInterface;
@@ -236,7 +237,13 @@ class DatabaseEntityManager
 		$this->otherExpanding[$contextKey] = $callback;
 	}
 
-	function getAllIds($restriction = null, $context = null): array {
+	/**
+	 * @param Restriction $restriction
+	 * @param $context
+	 *
+	 * @return array|string[]
+	 */
+	function getAllIds(?Restriction $restriction = null, $context = null): array {
 		$table = $this->tableName;
 		$allIdsRequest = $this->notORM->$table();
 		$allIdsRequest = $this->spec->getAllItemsRequest($allIdsRequest, $context);
@@ -441,7 +448,7 @@ class DatabaseEntityManager
 		return $this->expandManyItems($allData, $context);
 	}
 
-	function getAllItems($context = null, $restriction = null): array {
+	function getAllItems($context = null, ?Restriction $restriction = null): array {
 		$table = $this->tableName;
 		$request = $this->notORM->$table();
 		$requestProcessed = $this->spec->getAllItemsRequest($request, $context);
@@ -962,24 +969,33 @@ class DatabaseEntityManager
 	}
 
 
-	protected function applyRestrictionToDbRequest($restriction, NotORM_Result $result) {
+	protected function applyRestrictionToDbRequest(?Restriction $restriction, NotORM_Result $result): NotORM_Result {
 		if (!$restriction) {
 			return $result;
 		}
 
-		if (is_callable($restriction)) {
-			$restrictedResult = $restriction($result);
-			if (!($restrictedResult instanceof NotORM_Result)) {
-				throw new Exception('Result of restriction must be a NotORM_Result!');
+		$restrictions = $restriction->getRestrictions();
+
+		foreach ($restrictions as $r) {
+
+			if (is_callable($r)) {
+				$restrictedResult = $r($result);
+				if (!($restrictedResult instanceof NotORM_Result)) {
+					throw new Exception('Result of restriction must be a NotORM_Result!');
+				}
+				$result = $restrictedResult;
+				continue;
 			}
-			return $restrictedResult;
+
+			if (is_array($r)) {
+				$result = $result->where($r);
+				continue;
+			}
+
+			throw new Exception('Restriction must be a callable or an array passable to NotORM_Result->where()!');
 		}
 
-		if (is_array($restriction)) {
-			return $result->where($restriction);
-		}
-
-		throw new Exception('Restriction must be a callable or an array passable to NotORM_Result->where()!');
+		return $result;
 
 	}
 
