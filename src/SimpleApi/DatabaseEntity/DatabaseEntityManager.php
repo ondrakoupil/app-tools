@@ -98,6 +98,8 @@ class DatabaseEntityManager
 	 */
 	protected $otherExpanding = array();
 
+	protected $getItemRowSelect = '';
+
 
 
 	function __construct(
@@ -237,6 +239,10 @@ class DatabaseEntityManager
 		$this->otherExpanding[$contextKey] = $callback;
 	}
 
+	function setupGetItemFields($fields) {
+		$this->getItemRowSelect = $fields;
+	}
+
 	/**
 	 * @param Restriction $restriction
 	 * @param $context
@@ -247,6 +253,7 @@ class DatabaseEntityManager
 		$table = $this->tableName;
 		$allIdsRequest = $this->notORM->$table();
 		$allIdsRequest = $this->spec->getAllItemsRequest($allIdsRequest, $context);
+		$allIdsRequest = $this->applyRestrictionToDbRequest($restriction, $allIdsRequest);
 		$allIdsRequest->select('id');
 		$r = array();
 		foreach ($allIdsRequest as $row) {
@@ -267,7 +274,11 @@ class DatabaseEntityManager
 			throw new InvalidArgumentException('Invalid ID ' . $id);
 		}
 		$table = $this->tableName;
-		$item = $this->notORM->$table()->where('id', $id)->fetch();
+		$req = $this->notORM->$table()->where('id', $id);
+		if ($this->getItemRowSelect) {
+			$req = $req->select($this->getItemRowSelect);
+		}
+		$item = $req->fetch();
 		if (!$item) {
 			throw new ItemNotFoundException($id);
 		}
@@ -288,7 +299,11 @@ class DatabaseEntityManager
 			}
 		}
 		$table = $this->tableName;
-		$items = $this->notORM->$table()->where('id', $ids)->fetchPairs('id');
+		$itemsReq = $this->notORM->$table()->where('id', $ids);
+		if ($this->getItemRowSelect) {
+			$itemsReq = $itemsReq->select($this->getItemRowSelect);
+		}
+		$items = $itemsReq->fetchPairs('id');
 		foreach ($ids as $id) {
 			if (!isset($items[$id])) {
 				throw new ItemNotFoundException($id);
@@ -451,6 +466,9 @@ class DatabaseEntityManager
 	function getAllItems($context = null, ?Restriction $restriction = null): array {
 		$table = $this->tableName;
 		$request = $this->notORM->$table();
+		if ($this->getItemRowSelect) {
+			$request->select($this->getItemRowSelect);
+		}
 		$requestProcessed = $this->spec->getAllItemsRequest($request, $context);
 		$requestProcessed = $this->applyRestrictionToDbRequest($restriction, $requestProcessed);
 		$items = array_values(array_map('iterator_to_array', iterator_to_array($requestProcessed)));
@@ -992,7 +1010,12 @@ class DatabaseEntityManager
 				continue;
 			}
 
-			throw new Exception('Restriction must be a callable or an array passable to NotORM_Result->where()!');
+			if (is_string($r)) {
+				$result = $result->where($r);
+				continue;
+			}
+
+			throw new Exception('Restriction must be a callable or an array/string passable to NotORM_Result->where()!');
 		}
 
 		return $result;
