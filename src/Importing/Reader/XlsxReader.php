@@ -3,6 +3,8 @@
 namespace OndraKoupil\AppTools\Importing\Reader;
 
 use Aspera\Spreadsheet\XLSX\Reader;
+use OndraKoupil\Tools\Arrays;
+use OndraKoupil\Tools\Strings;
 
 class XlsxReader implements ReaderInterface {
 
@@ -13,13 +15,18 @@ class XlsxReader implements ReaderInterface {
 	 */
 	protected $readerInstance;
 
+	protected $useLetters = false;
+	protected $useNumbers = true;
+
 	/**
 	 * ${CARET}
 	 *
 	 * @param string $filePath
 	 */
-	public function __construct($filePath = '') {
+	public function __construct($filePath = '', $useLetters = false, $useNumbers = true) {
 		$this->filePath = $filePath;
+		$this->useLetters = $useLetters;
+		$this->useNumbers = $useNumbers;
 	}
 
 	/**
@@ -29,6 +36,10 @@ class XlsxReader implements ReaderInterface {
 		$this->filePath = $filePath;
 	}
 
+	function setUsedIndices(bool $numbers, bool $letters) {
+		$this->useNumbers = $numbers;
+		$this->useLetters = $letters;
+	}
 
 	public function startReading() {
 		$this->readerInstance = new Reader();
@@ -40,7 +51,18 @@ class XlsxReader implements ReaderInterface {
 		if (!$this->readerInstance->valid()) {
 			return null;
 		}
-		return $this->readerInstance->current();
+		$curr = $this->readerInstance->current();
+
+		if ($this->useLetters) {
+			foreach ($curr as $number => $value) {
+				$curr[Strings::numberToExcel($number)] = $value;
+			}
+		}
+		if (!$this->useNumbers) {
+			$curr = Arrays::removeNumericIndices($curr);
+		}
+
+		return $curr;
 	}
 
 	public function endReading() {

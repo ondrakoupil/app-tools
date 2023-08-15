@@ -3,7 +3,7 @@
     "description": "A bunch of tools and utilities for my projects",
     "type": "library",
     "require": {
-        "ondrakoupil/tools": "^1.2.5",
+        "ondrakoupil/tools": "^1.2.7",
         "ext-json": "*",
         "ext-pdo": "*",
         "php": ">=7.3",
@@ -15,7 +15,8 @@
         "psr/log": "^1.1",
 		"ext-mbstring": "*",
 		"ext-fileinfo": "*",
-        "ext-gd": "*"
+        "ext-gd": "*",
+        "aspera/xlsx-reader": "^1.1"
     },
     "suggest": {
         "psr/log": "Required for Logger",

@@ -73,6 +73,8 @@ class DatabaseImporter implements ImporterInterface {
 
 	protected $truncateBefore = false;
 
+	protected $errorHandler;
+
 	/**
 	 * @param DatabaseWrapper $db
 	 * @param string $tableName
@@ -134,6 +136,17 @@ class DatabaseImporter implements ImporterInterface {
 	}
 
 	/**
+	 * Nastaví funkci, která se spustí, pokud během procesingu nebo parsingu nastane chyba (vyhozena výjimka).
+	 * Pokud je nastaven, výjimka nezastaví import, ale je předána handleru. Pokud ale i handler vyhodí výjimku,
+	 * je import přerušen.
+	 *
+	 * Funkce dostane výjimku a číslo řádku.
+	 */
+	function setErrorHandler(callable $handler) {
+		$this->errorHandler = $handler;
+	}
+
+	/**
 	 * Transformuje načtenou položku z Readeru do podoby dat pro databázi.
 	 *
 	 * @param callable $callback function($readRow, $itemPosition) => $dataToSaveToDb
@@ -182,7 +195,15 @@ class DatabaseImporter implements ImporterInterface {
 		$this->reader->startReading();
 
 		while ($item = $this->reader->readNextItem()) {
-			$this->processOneItem($item, $this->reader->getCurrentPosition());
+			try {
+				$this->processOneItem($item, $this->reader->getCurrentPosition());
+			} catch (Exception $e) {
+				if ($this->errorHandler) {
+					call_user_func_array($this->errorHandler, array($e, $this->reader->getCurrentPosition()));
+				} else {
+					throw $e;
+				}
+			}
 		}
 
 		$this->reader->endReading();
