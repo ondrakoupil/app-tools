@@ -6,7 +6,7 @@
         "ondrakoupil/tools": "^1.2.7",
         "ext-json": "*",
         "ext-pdo": "*",
-        "php": ">=7.3",
+        "php": ">=8.0",
 		"ext-curl": "*",
         "psr/http-message": "^1.0",
         "psr/http-server-handler": "^1.0",
@@ -24,7 +24,8 @@
         "rah/danpu": "Required for BackupsManager",
         "vrana/notorm": "Required for Importing, SimpleApi and some other stuff",
         "slim/slim": "Required from Slim stuff. Use v4.",
-        "aspera/xlsx-reader": "Required for XLSX reading functionality"
+        "aspera/xlsx-reader": "Required for XLSX reading functionality",
+        "phpoffice/phpspreadsheet": "Required for XLSX writing functionality"
     },
     "require-dev": {
         "nette/tester": "^2.2",

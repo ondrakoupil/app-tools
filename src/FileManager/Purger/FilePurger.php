@@ -110,7 +110,7 @@ class FilePurger {
 	 *
 	 * @return string[]
 	 */
-	public function run(array $allowedFiles): array {
+	public function run(array $allowedFiles = array()): array {
 
 		$purgableFiles = $this->findPurgableFiles($allowedFiles);
 
