@@ -450,7 +450,7 @@ abstract class ExcelWriter extends TableFileWriter {
 	}
 
 	protected function finalizeSheet(Worksheet $sheet) {
-		if ($this->frozenColumns or $this->frozenColumns) {
+		if ($this->frozenColumns or $this->frozenRows) {
 			$sheet->freezePane(array($this->frozenColumns + 1, $this->frozenRows + 1));
 		}
 
