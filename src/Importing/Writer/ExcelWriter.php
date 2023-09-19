@@ -301,6 +301,20 @@ abstract class ExcelWriter extends TableFileWriter {
 	}
 
 	/**
+	 * Nastaví, že dané sloupečky jsou obyč textové
+	 *
+	 * @param $columns
+	 *
+	 * @return void
+	 */
+	function setTextColumns($columns) {
+		$columns = Arrays::arrayize($columns);
+		foreach ($columns as $col) {
+			$this->columnFormats[self::normalizeColumn($col)] = DataType::TYPE_STRING2;
+		}
+	}
+
+	/**
 	 * Callback pro každý řádek.
 	 *
 	 * @param callable $rowStyleCallback function (Style $style, int $rowNumber, mixed $item, mixed $preparedItem)
