@@ -34,18 +34,33 @@ class SubItemsManager {
 	 */
 	protected $childIdName;
 
+	/**
+	 * @var bool
+	 */
+	private $useStringIds;
+
 	function __construct(
 		NotORM $db,
 		string $childTableName,
 		string $childForeignKeyName,
-		string $childIdName = 'id'
+		string $childIdName = 'id',
+		bool $useStringIds = true
 	) {
 
 		$this->db = $db;
 		$this->childTableName = $childTableName;
 		$this->childForeignKeyName = $childForeignKeyName;
 		$this->childIdName = $childIdName;
+		$this->useStringIds = $useStringIds;
 	}
+
+	/**
+	 * @param bool $useStringIds
+	 */
+	public function setUseStringIds(bool $useStringIds): void {
+		$this->useStringIds = $useStringIds;
+	}
+
 
 	/**
 	 * Use to speed up using getChildrenOf* methods
@@ -217,9 +232,15 @@ class SubItemsManager {
 		$request->select($this->childForeignKeyName, $this->childIdName);
 		$result = array();
 		foreach ($request as $row) {
+			$parent = $row[$this->childForeignKeyName];
+			$child = $row[$this->childIdName];
+			if ($this->useStringIds) {
+				$parent .= '';
+				$child .= '';
+			}
 			$result[] = array(
-				'parent' => $row[$this->childForeignKeyName],
-				'child' => $row[$this->childIdName],
+				'parent' => $parent,
+				'child' => $child,
 			);
 		}
 		return $result;

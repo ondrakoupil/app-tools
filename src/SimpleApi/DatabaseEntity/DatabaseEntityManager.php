@@ -100,6 +100,7 @@ class DatabaseEntityManager
 
 	protected $getItemRowSelect = '';
 
+	protected $useStringIds = true;
 
 
 	function __construct(
@@ -117,6 +118,14 @@ class DatabaseEntityManager
 			$this->spec = new DefaultEntity();
 		}
 	}
+
+	/**
+	 * @param bool $useStringIds
+	 */
+	public function setUseStringIds(bool $useStringIds): void {
+		$this->useStringIds = $useStringIds;
+	}
+
 
 	function defineSubItemsRelation(SubItemsManager $relationManager, string $childEntityId, $childEntityManagerOrGetter, bool $asDefault = true) {
 		if (isset($this->childItemManagers[$childEntityId])) {
@@ -257,7 +266,11 @@ class DatabaseEntityManager
 		$allIdsRequest->select('id');
 		$r = array();
 		foreach ($allIdsRequest as $row) {
-			$r[] = $row['id'];
+			$id = $row['id'];
+			if ($this->useStringIds) {
+				$id = $row['id'] .= '';
+			}
+			$r[] = $id;
 		}
 		return $r;
 	}
@@ -281,6 +294,9 @@ class DatabaseEntityManager
 		$item = $req->fetch();
 		if (!$item) {
 			throw new ItemNotFoundException($id);
+		}
+		if ($this->useStringIds) {
+			$item['id'] .= '';
 		}
 		return $item;
 	}
@@ -309,10 +325,18 @@ class DatabaseEntityManager
 				throw new ItemNotFoundException($id);
 			}
 		}
+		if ($this->useStringIds) {
+			foreach ($items as $index => $item) {
+				$items[$index]['id'] .= '';
+			}
+		}
 		return $items;
 	}
 
 	protected function expandItem(string $id, array $item, $context = null): array {
+		if ($this->useStringIds) {
+			$item['id'] .= '';
+		}
 		$expandedFromSpec = $this->spec->expandItem($id, $item, $context);
 		if ($context) {
 			foreach ($this->autoExpandChildItems as $contextKey => $autoExpandData) {
@@ -360,6 +384,11 @@ class DatabaseEntityManager
 	}
 
 	protected function expandManyItems(array $items, $context = null): array {
+		if ($this->useStringIds) {
+			foreach ($items as $index => $item) {
+				$items[$index]['id'] .= '';
+			}
+		}
 		$expandedFromSpec = $this->spec->expandManyItems($items, $context);
 		if ($context) {
 			foreach ($this->autoExpandChildItems as $contextKey => $autoExpandData) {

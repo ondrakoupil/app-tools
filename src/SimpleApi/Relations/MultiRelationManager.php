@@ -32,18 +32,30 @@ class MultiRelationManager {
 	 */
 	private $otherColumnName;
 
+	protected bool $useStringIds;
+
 	function __construct(
 		NotORM $db,
 		string $relationTableName,
 		string $myColumnName,
-		string $otherColumnName
+		string $otherColumnName,
+		bool $useStringIds = true
 	) {
 
 		$this->db = $db;
 		$this->relationTableName = $relationTableName;
 		$this->myColumnName = $myColumnName;
 		$this->otherColumnName = $otherColumnName;
+		$this->useStringIds = $useStringIds;
 	}
+
+	/**
+	 * @param bool $useStringIds
+	 */
+	public function setUseStringIds(bool $useStringIds): void {
+		$this->useStringIds = $useStringIds;
+	}
+
 
 	/**
 	 * @param string $id
@@ -171,9 +183,15 @@ class MultiRelationManager {
 		$request->select($this->myColumnName, $this->otherColumnName);
 		$result = array();
 		foreach ($request as $row) {
+			$myId = $row[$this->myColumnName];
+			$otherId = $row[$this->otherColumnName];
+			if ($this->useStringIds) {
+				$myId .= '';
+				$otherId .= '';
+			}
 			$result[] = array(
-				'my' => $row[$this->myColumnName],
-				'other' => $row[$this->otherColumnName],
+				'my' => $myId,
+				'other' => $otherId,
 			);
 		}
 		return $result;
