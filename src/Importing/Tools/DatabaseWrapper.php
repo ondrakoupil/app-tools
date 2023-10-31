@@ -32,10 +32,11 @@ class DatabaseWrapper {
 	}
 
 	/**
-	 * Nstaví na dry-run pomocí fakeového NotORM
+	 * Nastaví na dry-run pomocí fakeového NotORM
 	 *
-	 * @param null|callable $queryCallback function ($query, $parameters) => void
-	 * Je-li null, použije se self::echoQuery
+	 * @param null|callable|bool $queryCallback function ($query, $parameters) => void
+	 * Je-li vynecháno nebo true, použije se self::echoQuery.
+	 * Je-li false nebo null, bere se to jako že je dry run vypnutý.
 	 *
 	 * @return void
 	 */
@@ -43,16 +44,18 @@ class DatabaseWrapper {
 		$this->createNotORMIfNeeded();
 		$this->notORM->debug = null;
 		$this->debugDb = new NotORM($this->pdo);
-		if ($queryCallback) {
+		if ($queryCallback and $queryCallback !== true) {
 			$this->debugDb->debug = function($query, $parameters) use ($queryCallback){
 				call_user_func_array($queryCallback, array($query, $parameters));
 				return false;
 			};
-		} else {
+		} elseif (func_num_args() === 0 or $queryCallback === true) {
 			$this->debugDb->debug = function($query, $parameters) {
 				self::echoQuery($query, $parameters);
 				return false;
 			};
+		} else {
+			$this->debugDb = null;
 		}
 	}
 
@@ -117,9 +120,16 @@ class DatabaseWrapper {
 	 * @return void
 	 */
 	static function echoQuery($query, $parameters) {
-		echo '<pre>' . "\n\n" . $query . "\n</pre>";
-		if ($parameters) {
-			echo "\n<br />Parameters: <pre>" . print_r($parameters, true) . "</pre>\n\n<br /><br />";
+		if (php_sapi_name() === 'cli') {
+			echo "\n\n" . $query;
+			if ($parameters) {
+				echo "\nParameters: " . print_r($parameters, true) . "\n";
+			}
+		} else {
+			echo '<pre>' . "\n\n" . $query . "\n</pre>";
+			if ($parameters) {
+				echo "\n<br />Parameters: <pre>" . print_r($parameters, true) . "</pre>\n\n<br /><br />";
+			}
 		}
 
 	}

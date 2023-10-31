@@ -6,7 +6,8 @@ use NotORM;
 use NotORM_Result;
 
 /**
- * Pomůcka pro sledování vedlejších entit, např. kategorií nebo tagů
+ * Pomůcka pro sledování vedlejších entit, např. kategorií nebo tagů.
+ * Může být použita i pro vyhledávání podle normalizovaného jména (např. podle názvu produktu).
  */
 class SecondaryEntityManager {
 
@@ -41,23 +42,28 @@ class SecondaryEntityManager {
 
 	protected $insertNewItemCallback = null;
 
+	protected $returnIdsOnly = true;
+
 
 	/**
 	 * @param DatabaseWrapper $db
 	 * @param string $tableName
 	 * @param string $nameColumn Který sloupec se má považovat za jméno?
 	 * @param string $idColumn
+	 * @param bool $returnIdsOnly
 	 */
 	function __construct(
 		DatabaseWrapper $db,
 		$tableName,
 		$nameColumn,
-		$idColumn = 'id'
+		$idColumn = 'id',
+		$returnIdsOnly = false
 	) {
 		$this->db = $db;
 		$this->tableName = $tableName;
 		$this->nameColumn = $nameColumn;
 		$this->idColumn = $idColumn;
+		$this->returnIdsOnly = $returnIdsOnly;
 	}
 
 	/**
@@ -65,6 +71,13 @@ class SecondaryEntityManager {
 	 */
 	public function setInsertNewItemCallback(callable $insertNewItemCallback) {
 		$this->insertNewItemCallback = $insertNewItemCallback;
+	}
+
+	/**
+	 * @param bool $returnIdsOnly
+	 */
+	public function setReturnIdsOnly(bool $returnIdsOnly): void {
+		$this->returnIdsOnly = $returnIdsOnly;
 	}
 
 
@@ -124,7 +137,7 @@ class SecondaryEntityManager {
 	 * @param string $name
 	 * @param array $moreDataToCreate Dodatečná data na vytvoření nové položky.
 	 *
-	 * @return array
+	 * @return array|string
 	 */
 	public function getOrCreateByName($name, $moreDataToCreate = array()) {
 		$this->loadIfNeeded();
@@ -147,6 +160,9 @@ class SecondaryEntityManager {
 			$processedName = $this->processName($name);
 			$this->dataCacheByName[$processedName] = $inserted;
 			$this->dataCacheById[$givenId] = $inserted;
+			if ($this->returnIdsOnly) {
+				return $this->getIdFromRow($inserted);
+			}
 			return $inserted;
 		}
 	}
@@ -165,7 +181,7 @@ class SecondaryEntityManager {
 	}
 
 	/**
-	 * Vrací existující položku nebo null
+	 * Vrací existující položku (nebo ID, pokud je returnIdsOnly) nebo null
 	 *
 	 * @param string $name
 	 *
@@ -174,7 +190,11 @@ class SecondaryEntityManager {
 	public function getByName($name) {
 		$this->loadIfNeeded();
 		$name = $this->processName($name);
-		return (isset($this->dataCacheByName[$name]) ? $this->dataCacheByName[$name] : null);
+		$row = (isset($this->dataCacheByName[$name]) ? $this->dataCacheByName[$name] : null);
+		if ($this->returnIdsOnly) {
+			return $this->getIdFromRow($row);
+		}
+		return $row;
 	}
 
 	/**
@@ -227,6 +247,13 @@ class SecondaryEntityManager {
 			}
 		}
 		return $name;
+	}
+
+	protected function getIdFromRow($row) {
+		if (!$row) {
+			return null;
+		}
+		return $row[$this->idColumn] ?? null;
 	}
 
 }
