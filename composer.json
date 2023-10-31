@@ -14,7 +14,9 @@
         "psr/log": "Required for Logger",
         "nette/neon": "Required for AppSettings",
         "rah/danpu": "Required for BackupsManager",
-        "vrana/notorm": "Required for Importing and some other stuff"
+        "vrana/notorm": "Required for Importing and some other stuff",
+        "aspera/xlsx-reader": "Required for Xlsx reader",
+        "phpoffice/phpspreadsheet": "Required for Xlsx writing"
     },
     "require-dev": {
         "nette/tester": "^2.2"
