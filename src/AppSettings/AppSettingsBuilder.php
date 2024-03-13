@@ -3,6 +3,7 @@
 namespace OndraKoupil\AppTools\AppSettings;
 
 use Nette\Neon\Neon;
+use OndraKoupil\Tools\Objects;
 use RuntimeException;
 
 class AppSettingsBuilder {
@@ -21,6 +22,11 @@ class AppSettingsBuilder {
 	 * @var string[]
 	 */
 	protected $subItems = array();
+
+	/**
+	 * @var callable[]
+	 */
+	protected $builderFunctions = array();
 
 	function __construct($class, $files) {
 		$this->class = $class;
@@ -59,11 +65,17 @@ class AppSettingsBuilder {
 	/**
 	 * @param string $itemName
 	 * @param string $class
+	 * @param callable $builderFunction Volitelně můžeš zadat funkci, která dostane vstupní data načtená ze souboru a měla by vrátit požadovaný objekt.
+	 *
+	 *
 	 *
 	 * @return void
 	 */
-	public function addSubitemClass($itemName, $class) {
+	public function addSubitemClass($itemName, $class, $builderFunction = null) {
 		$this->subItems[$itemName] = $class;
+		if ($builderFunction) {
+			$this->builderFunctions[$itemName] = $builderFunction;
+		}
 	}
 
 	/**
@@ -95,7 +107,7 @@ class AppSettingsBuilder {
 
 		$settings = new $this->class;
 
-		$fields = get_object_vars($settings);
+		$fields = get_class_vars($this->class);
 
 		foreach ($fields as $f => $val) {
 			if (array_key_exists($f, $data)) {
@@ -107,15 +119,24 @@ class AppSettingsBuilder {
 				$v = $val;
 			}
 			if (isset($this->subItems[$f]) and $this->subItems[$f]) {
-				$classV = new $this->subItems[$f];
-				foreach (get_object_vars($classV) as $classVName => $classVVal) {
-					if (!$classVVal and !array_key_exists($classVName, $v)) {
-						throw new RuntimeException('App settings missing field: ' . $f . '->' . $classVName);
+
+				if (isset($this->builderFunctions[$f]) and $this->builderFunctions[$f]) {
+					$classV = call_user_func_array($this->builderFunctions[$f], array($v, $data));
+					if (!($classV instanceof $this->subItems[$f])) {
+						throw new RuntimeException('Returned value was supposed to be of class ' . $this->subItems[$f]);
 					}
-					if (array_key_exists($classVName, $v)) {
-						$classV->$classVName = $v[$classVName];
+				} else {
+					$classV = new $this->subItems[$f];
+					foreach (get_object_vars($classV) as $classVName => $classVVal) {
+						if (!$classVVal and !array_key_exists($classVName, $v)) {
+							throw new RuntimeException('App settings missing field: ' . $f . '->' . $classVName);
+						}
+						if (array_key_exists($classVName, $v)) {
+							$classV->$classVName = $v[$classVName];
+						}
 					}
 				}
+
 				$v = $classV;
 			}
 			$settings->$f = $v;
