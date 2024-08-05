@@ -2,18 +2,20 @@
 
 namespace OndraKoupil\AppTools\Importing\Writer;
 
+use Exception;
+use InvalidArgumentException;
 use OndraKoupil\Tools\Arrays;
 use OndraKoupil\Tools\Strings;
 use RuntimeException;
 
 abstract class TableFileWriter implements WriterInterface {
-	
+
 	protected $headerRows = array();
 
 	protected $currentHeaderRow = 0;
-	
+
 	protected $headerCallback = null;
-	
+
 	protected $mappings = array();
 
 	protected $itemCallback = null;
@@ -23,7 +25,7 @@ abstract class TableFileWriter implements WriterInterface {
 	) {
 
 	}
-	
+
 	function setColumnHeader($column, $name, $row = null) {
 		if ($row === null) {
 			$row = $this->currentHeaderRow;
@@ -43,10 +45,28 @@ abstract class TableFileWriter implements WriterInterface {
 			$this->setColumnHeader($col, $header, $row);
 		}
 	}
-	
+
 	function setMappings($mappings) {
 		foreach ($mappings as $column => $alias) {
 			$this->setMapping($column, $alias);
+		}
+	}
+
+	function setLetterColumnMappings($allowedLetterColumns) {
+		foreach ($allowedLetterColumns as $column) {
+			$this->setMapping($column, $column);
+		}
+	}
+
+	function setLetterColumnRangeMapping($minLetter, $maxLetter, $uppercase = true) {
+		$min = Strings::excelToNumber($minLetter);
+		$max = Strings::excelToNumber($maxLetter);
+		if ($max < $min) {
+			throw new InvalidArgumentException($minLetter . ' must not be more than ' . $maxLetter);
+		}
+		for ($i = $min; $i <= $max; $i++) {
+			$letter = Strings::numberToExcel($i, true, $uppercase);
+			$this->setMapping($letter, $letter);
 		}
 	}
 
@@ -63,7 +83,7 @@ abstract class TableFileWriter implements WriterInterface {
 
 	function prepareItem(array $item) {
 		$item = $this->processMappingsInItem($item);
-		$w = max(array_keys($item));
+		$w = $item ? max(array_keys($item)) : 0;
 		for ($i = 0; $i < $w; $i++) {
 			if (!array_key_exists($i, $item)) {
 				$item[$i] = '';
@@ -82,7 +102,7 @@ abstract class TableFileWriter implements WriterInterface {
 
 		return $item;
 	}
-	
+
 	function setMapping($column, $alias) {
 		$column = self::normalizeColumn($column);
 		$this->mappings[$alias] = $column;
@@ -102,7 +122,7 @@ abstract class TableFileWriter implements WriterInterface {
 	static function normalizeColumn($col) {
 		if (is_numeric($col)) {
 			return $col;
-		}	
+		}
 		return Strings::excelToNumber($col);
 	}
 

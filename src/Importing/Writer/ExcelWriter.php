@@ -90,7 +90,8 @@ abstract class ExcelWriter extends TableFileWriter {
 	 * @return void
 	 */
 	function freezeHeader($columns = 0) {
-		$this->setFrozenCells(max(array_keys($this->headerRows)) + 1, $columns);
+		$countOfRows = $this->headerRows ? (max(array_keys($this->headerRows)) + 1) : 0;
+		$this->setFrozenCells($countOfRows, $columns);
 	}
 
 	/**
@@ -369,6 +370,10 @@ abstract class ExcelWriter extends TableFileWriter {
 
 	protected function writeHeadersToSheet(Worksheet $sheet) {
 
+		if (!$this->headerRows) {
+			return;
+		}
+
 		foreach ($this->headerRows as $row => $headers) {
 			$excelRow = $row + 1;
 			foreach ($headers as $cellIndex => $headerName) {
@@ -389,6 +394,11 @@ abstract class ExcelWriter extends TableFileWriter {
 	}
 
 	protected function applyHeaderStyles(Worksheet $sheet) {
+
+		if (!$this->headerRows) {
+			return;
+		}
+
 		$headerRowsCount = max(array_keys($this->headerRows)) + 1;
 		$dims = $this->calculateSpreadsheetSize($sheet);
 		$maxColumnNum = $dims['w'];
@@ -469,7 +479,7 @@ abstract class ExcelWriter extends TableFileWriter {
 		}
 
 		$dims = $this->calculateSpreadsheetSize($sheet);
-		$firstDataRow = max(array_keys($this->headerRows)) + 2;
+		$firstDataRow = $this->headerRows ? (max(array_keys($this->headerRows)) + 2) : 1;
 
 		if ($this->cellStyle) {
 			$style = $sheet->getStyle(array(1, $firstDataRow, $dims['w'], $dims['h']));
