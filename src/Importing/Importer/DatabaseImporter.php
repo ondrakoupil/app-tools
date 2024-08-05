@@ -2,8 +2,10 @@
 
 namespace OndraKoupil\AppTools\Importing\Importer;
 
+use ArrayAccess;
 use Exception;
 use NotORM;
+use NotORM_Literal;
 use NotORM_Result;
 use NotORM_Row;
 use OndraKoupil\AppTools\Importing\Reader\ReaderInterface;
@@ -22,8 +24,10 @@ use RuntimeException;
  * - setBatchSize - zapojí MassDbInserter a ukládá více položek naráz
  * - setMappings - automatické mapování políček ze zdroje do cíle, buď úplný výčet, nebo jen ta která neodpovídají
  * - setFixedValues - automaticky přidá nějaké napevno dané hodnoty
+ * - setDuplicateColumns - zapne používání "on duplicate update" query, definuje sloupce, které se v případě kolize ID mají aktualizovat
  * - setTransformCallback - manuální callback na transformaci
  * - setTruncateBefore - umožní promazat cílovou tabulku před importem
+ * - setSaveHandler - umožní místo výchozího dumpování přímo do databáze zavolat jiný callback
  *
  */
 class DatabaseImporter implements ImporterInterface {
@@ -74,6 +78,10 @@ class DatabaseImporter implements ImporterInterface {
 	protected $truncateBefore = false;
 
 	protected $errorHandler;
+
+	protected $saveHandler;
+
+	protected $duplicateColumns = array();
 
 	/**
 	 * @param DatabaseWrapper $db
@@ -133,6 +141,25 @@ class DatabaseImporter implements ImporterInterface {
 	 */
 	function setWriteDb(NotORM $notORM) {
 		$this->writeDb = $notORM;
+	}
+
+	/**
+	 * @param callable $saveHandler (array $item, NotORM_Result $insertTable, DatabaseWrapper $db): return string ID of inserted item
+	 *
+	 * @return void
+	 */
+	function setSaveHandler(callable $saveHandler) {
+		$this->saveHandler = $saveHandler;
+	}
+
+	/**
+	 *
+	 * @param string[] $duplicateColumns
+	 *
+	 * @return void
+	 */
+	public function setDuplicateColumns(array $duplicateColumns): void {
+		$this->duplicateColumns = $duplicateColumns;
 	}
 
 	/**
@@ -278,10 +305,45 @@ class DatabaseImporter implements ImporterInterface {
 
 		try {
 			if ($this->massInserter) {
+				if ($this->saveHandler or $this->duplicateColumns) {
+					throw new Exception('You can\'t use MassInserter and custom save handler or duplicate columns at the same time.');
+				}
 				$this->massInserter->insert($item);
 				$givenId = null;
 			} else {
-				$inserted = $this->getInsertTable()->insert($item);
+
+				if ($this->saveHandler) {
+					$inserted = call_user_func_array($this->saveHandler, array(
+						$item,
+						$this->getInsertTable(),
+						$this->db
+					));
+				} else {
+
+					if ($this->duplicateColumns and $item[$this->idColumn]) {
+
+						$unique = array($this->idColumn => $item[$this->idColumn]);
+						$dataToInsert = $item;
+						unset($dataToInsert[$this->idColumn]);
+						$dataToUpdate = array();
+						foreach ($this->duplicateColumns as $col) {
+							$dataToUpdate[$col] = $dataToInsert[$col];
+						}
+
+						$inserted = $this->getInsertTable()->insert_update($unique, $dataToInsert, $dataToUpdate);
+						if (!is_array($inserted) and !($inserted instanceof ArrayAccess)) {
+							// PG
+							$inserted = $item;
+						}
+
+
+					} else {
+						$inserted = $this->getInsertTable()->insert($item);
+					}
+
+
+				}
+
 				if (!$inserted) {
 					$givenId = $this->db->generateFakeId();
 				} else {
