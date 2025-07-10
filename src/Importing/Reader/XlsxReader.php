@@ -18,6 +18,8 @@ class XlsxReader implements ReaderInterface {
 	protected $useLetters = false;
 	protected $useNumbers = true;
 
+	protected $sheetIndex = null;
+
 	/**
 	 * ${CARET}
 	 *
@@ -36,6 +38,10 @@ class XlsxReader implements ReaderInterface {
 		$this->filePath = $filePath;
 	}
 
+	public function setSheetIndex($sheetIndex) {
+		$this->sheetIndex = $sheetIndex;
+	}
+
 	function setUsedIndices(bool $numbers, bool $letters) {
 		$this->useNumbers = $numbers;
 		$this->useLetters = $letters;
@@ -44,6 +50,9 @@ class XlsxReader implements ReaderInterface {
 	public function startReading() {
 		$this->readerInstance = new Reader();
 		$this->readerInstance->open($this->filePath);
+		if ($this->sheetIndex !== null) {
+			$this->readerInstance->changeSheet($this->sheetIndex);
+		}
 	}
 
 	public function readNextItem() {

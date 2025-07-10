@@ -9,6 +9,7 @@ use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\Style\Style;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
@@ -21,6 +22,7 @@ abstract class ExcelWriter extends TableFileWriter {
 	protected $columnFormats = array();
 	protected $columnNumericFormats = array();
 	protected $columnDateTimes = array();
+	protected $columnsWithWrap = array();
 
 	protected $headerStyleGlobal = null;
 	protected $headerStyleForRow = array();
@@ -62,6 +64,12 @@ abstract class ExcelWriter extends TableFileWriter {
 	function setColumnWidths($widths) {
 		foreach ($widths as $col => $width) {
 			$this->setColumnWidth($col, $width);
+		}
+	}
+
+	function setColumnsWithWrap($columns, $wrap = true) {
+		foreach (Arrays::arrayize($columns) as $c) {
+			$this->columnsWithWrap[self::normalizeColumn($c)] = $wrap;
 		}
 	}
 
@@ -324,6 +332,7 @@ abstract class ExcelWriter extends TableFileWriter {
 	 *  - $rowNumber = Číslo řádku (excelovské)
 	 *  - $item = Původní item ze vstupu
 	 *  - $preparedItem = Item se zapracovanými mappingy a dalším processingem
+	 *  - $sheet = Worksheet objekt, na kterém se píše
 	 *
 	 * @return void
 	 */
@@ -449,6 +458,7 @@ abstract class ExcelWriter extends TableFileWriter {
 						$sheet->setCellValue(array($colIndex + 1, $this->currentRow + 1), $value);
 					}
 				}
+
 			}
 		}
 		if ($this->rowStyleCallback) {
@@ -457,7 +467,8 @@ abstract class ExcelWriter extends TableFileWriter {
 				$style,
 				$this->currentRow + 1,
 				$item,
-				$preparedItem
+				$preparedItem,
+				$sheet,
 			));
 		}
 		$this->currentRow++;
@@ -503,6 +514,11 @@ abstract class ExcelWriter extends TableFileWriter {
 					$dims['h']
 				));
 			}
+		}
+
+		foreach ($this->columnsWithWrap as $column => $wrap) {
+			$style = $sheet->getStyle(array($column + 1, $firstDataRow, $column + 1, $dims['h']));
+			$style->getAlignment()->setWrapText($wrap)->setVertical(Alignment::VERTICAL_TOP);
 		}
 
 		foreach ($this->columnDateTimes as $col => $date) {

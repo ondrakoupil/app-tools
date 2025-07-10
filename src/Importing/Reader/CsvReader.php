@@ -86,6 +86,12 @@ class CsvReader implements ReaderInterface {
 	 */
 	public function __construct($filename, $delimiter = null, $enclosure = null) {
 		$this->setFile($filename);
+		if ($delimiter !== null) {
+			$this->setDelimiter($delimiter);
+		}
+		if ($enclosure !== null) {
+			$this->setEnclosure($enclosure);
+		}
 	}
 
 	/**
