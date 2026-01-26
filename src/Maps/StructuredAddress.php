@@ -18,7 +18,10 @@ class StructuredAddress {
 
 	public $country;
 
+	public $name;
+
 	/**
+	 * @param string $name
 	 * @param string $streetWithNumber
 	 * @param string $street
 	 * @param string $cityPart
@@ -27,7 +30,8 @@ class StructuredAddress {
 	 * @param string $region
 	 * @param string $country
 	 */
-	public function __construct($streetWithNumber = '', $street = '', $cityPart = '', $city = '', $district = '', $region = '', $country = '') {
+	public function __construct($name = '', $streetWithNumber = '', $street = '', $cityPart = '', $city = '', $district = '', $region = '', $country = '') {
+		$this->name = $name;
 		$this->streetWithNumber = $streetWithNumber;
 		$this->street = $street;
 		$this->cityPart = $cityPart;

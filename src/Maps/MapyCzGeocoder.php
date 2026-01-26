@@ -4,21 +4,26 @@ namespace OndraKoupil\AppTools\Maps;
 
 class MapyCzGeocoder implements IAddressToCoords, ICoordsToAddress {
 
+	protected $apiKey;
+
+	function __construct($apiKey = null) {
+		$this->apiKey = $apiKey;
+	}
+
 	public function geocodeFromAddress($address) {
-		// https://api.mapy.cz/geocode?query=Radlick%C3%A1%202
-		$url = 'https://api.mapy.cz/geocode?query=' . rawurlencode($address);
+		$url = 'https://api.mapy.com/v1/geocode?query=' . rawurlencode($address) . '&apikey=' . rawurlencode($this->apiKey);
 		$curl = curl_init($url);
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 		$response = curl_exec($curl);
 
 		if ($response) {
 
-			$xml = simplexml_load_string($response);
+			$parsed = json_decode($response, true);
 
-			if ($xml) {
-				$item = $xml->point->item[0];
-				if ($item and $item['x'] and $item['y']) {
-					return new Coords((string)$item['y'], (string)$item['x']);
+			if ($parsed) {
+				$position = $parsed['items'][0]['position'] ?? null;
+				if ($position and $position['lat'] and $position['lon']) {
+					return new Coords((string)$position['lat'], (string)$position['lon']);
 				}
 			}
 
@@ -37,72 +42,41 @@ class MapyCzGeocoder implements IAddressToCoords, ICoordsToAddress {
 			return null;
 		}
 
-		$url = 'https://api.mapy.cz/rgeocode?lon=' . rawurlencode($coords->lon) . '&lat=' . rawurlencode($coords->lat);
+		$url = 'https://api.mapy.com/v1/rgeocode?lon=' . rawurlencode($coords->lon) . '&lat=' . rawurlencode($coords->lat) . '&apikey=' . rawurlencode($this->apiKey);
 		$curl = curl_init($url);
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 		$response = curl_exec($curl);
 
 		if ($response) {
-			$xml = simplexml_load_string($response);
-			if ($xml and $xml->item) {
+			$parsed = json_decode($response, true);
+			if ($parsed and $parsed['items']) {
 
 				$address = new StructuredAddress();
 
-				foreach($xml->item as $item) {
+				foreach($parsed['items'] as $item) {
 					$name = (string)$item['name'];
-					switch ((string)$item['type']) {
-						case 'addr':
-							if ($address->streetWithNumber) {
-								$address->streetWithNumber .= ', ';
-							}
-							$address->streetWithNumber .= $name;
-							break;
-
-						case 'stre':
-							if ($address->street) {
-								$address->street .= ', ';
-							}
-							$address->street .= $name;
-							break;
-
-						case 'quar':
-						case 'ward':
-							if ($address->cityPart) {
-								$address->cityPart .= ', ';
-							}
-							$address->cityPart .= $name;
-							break;
-
-						case 'muni':
-						case 'osmm':
-							if ($address->city) {
-								$address->city .= ', ';
-							}
-							$address->city .= $name;
-							break;
-
-						case 'dist':
-							if ($address->district) {
-								$address->district .= ', ';
-							}
-							$address->district .= $name;
-							break;
-
-						case 'region':
-						case 'osmr':
-							if ($address->region) {
-								$address->region .= ', ';
-							}
-							$address->region .= $name;
-							break;
-
-						case 'coun':
-						case 'osmc':
-							if ($address->country) {
-								$address->country .= ', ';
-							}
-							$address->country .= $name;
-							break;
+					$address->name = $name;
+					foreach ($item['regionalStructure'] as $structureItem) {
+						switch ($structureItem['type']) {
+							case 'regional.address':
+								$address->streetWithNumber = $structureItem['name'];
+								break;
+							case 'regional.street':
+								$address->street = $structureItem['name'];
+								break;
+							case 'regional.municipality_part':
+								$address->cityPart = $structureItem['name'];
+								break;
+							case 'regional.municipality':
+								$address->city = $structureItem['name'];
+								break;
+							case 'regional.region':
+								$address->region = $structureItem['name'];
+								break;
+							case 'regional.country':
+								$address->country = $structureItem['name'];
+								break;
+						}
 					}
 				}
 

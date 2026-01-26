@@ -14,7 +14,8 @@ class MapyCzCachingGeocoder extends MapyCzGeocoder {
 	/**
 	 * @param $cacheFile
 	 */
-	public function __construct($cacheFile) {
+	public function __construct($cacheFile, $apiKey = null) {
+		parent::__construct($apiKey);
 		$this->cacheFile = $cacheFile;
 		$this->loadFromCache();
 	}
